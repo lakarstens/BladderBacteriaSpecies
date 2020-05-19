@@ -2,4 +2,4 @@
 
 here's my overall activity diagram for my thesis
 
-![](picts/sm_overall_activity.png)
+![](sm_overall_activity.png)
