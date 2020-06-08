@@ -9,7 +9,7 @@
 I’m using this file to generate all md files for the github readme
 pages.
 
-![](sm_overall_activity.png)
+![](resources/md_files/sm_overall_activity.png)
 
 # Data download
 
