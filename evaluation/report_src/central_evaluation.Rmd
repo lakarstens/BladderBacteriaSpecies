@@ -1,0 +1,797 @@
+---
+title: "evaluation functions"
+author: "Carter Hoffman"
+date: "_last edited `r Sys.Date()`_"
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  html_document:
+      toc: true
+      toc_depth: 4
+      toc_float: true
+      theme: readable
+      highlight: tango
+
+---
+```{r, eval=FALSE, echo=FALSE}
+output: 
+  pdf_document:
+      toc: true
+      toc_depth: 2
+      df_print: kable
+    
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: readable
+    highlight: tango
+
+# knit directly to md for github
+output:
+  md_document:
+    variant: gfm
+```
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+library(wesanderson)
+library(broom)
+library(viridis)
+library(ggrepel)
+library(RColorBrewer)
+library(patchwork)
+library(ggrepel)
+library(lubridate)
+```
+
+
+# R functions
+
+##### 6/3
+
+I want to scream. Creating a logical vector to add to a dataframe does not work. Need to move that test into the clauses where I'm checking for the attendance.
+
+```{r}
+#---------------------------#
+#   functions!              #
+#---------------------------#
+
+# from stackoverflow https://stackoverflow.com/questions/38351820/negation-of-in-in-r
+# it was easier to define a not-in function than redo all those lists
+`%notin%` <- Negate(`%in%`)
+
+list_of_df <- function(path_to_dir, prefix) {
+  # got tired of loading all the csv files individually, 
+  # so this function does it in batch. Reads all filenames 
+  # in a dir, then creates a df from the csv, then adds names 
+  # to the growing list of dataframes.
+  get_filenames <- list.files(path_to_dir, full.names = TRUE)
+  build_csv_df <- lapply(get_filenames, read.csv, stringsAsFactors=FALSE)
+
+  grow_names <- vector()
+  for (g in get_filenames) {
+    new_name <- paste(prefix, strsplit(basename(g), "_")[[1]][3], strsplit(basename(g), "_")[[1]][5], sep="_")
+    grow_names <- c(grow_names, new_name)
+  }
+  names(build_csv_df) <- grow_names
+  return(build_csv_df)
+}
+
+f1_records <- function(results, db, vr, clsfr) {
+     #print(sprintf("%s confidence values", length(unique(results$confidence))))
+  # was a little lazy with the column names
+  # after the python script is done reformatting classification
+  # results to something that can be imported as a df, 
+  # the classifer column is labled 'blca', whether it's blca or nb.
+  
+  # these are lists of the species missing from each reference database
+  # in order to calculate the number of missed matches correctly
+  gg_missing <- c('Actinotignum schaalii', 'Actinomyces naeslundii', 'Actinomyces neuii subsp. anitratus', 'Actinomyces odontolyticus', 'Actinomyces turicensis', 'Actinomyces urogenitalis DSM 15434', 'Aerococcus christensenii', 'Aerococcus sanguinicola', 'Aerococcus urinae', 'Alloscardovia omnicolens', 'Anaerococcus octavius', 'Bacillus idriensis', 'Bacillus infantis', 'Brevibacterium ravenspurgense', 'Corynebacterium amycolatum', 'Corynebacterium coyleae', 'Corynebacterium matruchotii ATCC 14266', 'Corynebacterium pyruviciproducens ATCC BAA-1742', 'Corynebacterium riegelii', 'Corynebacterium tuscaniense', 'Dermabacter hominis', 'Enterobacter asburiae', 'Enterobacter cloacae subsp. cloacae ATCC 13047', 'Enterococcus faecalis', 'Escherichia coli', 'Facklamia hominis CCUG 36813', 'Facklamia ignava', 'Gardnerella vaginalis ATCC 14018 = JCM 11026', 'Globicatella sanguinis', 'Gordonia terrae', 'Klebsiella pneumoniae', 'Kytococcus schroeteri', 'Lactobacillus crispatus', 'Lactobacillus fermentum', 'Lactobacillus gasseri', 'Lactobacillus jensenii', 'Lactobacillus johnsonii', 'Lactobacillus rhamnosus', 'Moraxella osloensis', 'Neisseria macacae', 'Neisseria perflava', 'Oligella urethralis', 'Propionibacterium avidum ATCC 25577', 'Proteus mirabilis', 'Pseudomonas aeruginosa', 'Staphylococcus hominis subsp. hominis', 'Staphylococcus saprophyticus subsp. saprophyticus ATCC 15305', 'Staphylococcus simulans', 'Staphylococcus warneri', 'Streptococcus equinus', 'Streptococcus gordonii', 'Streptococcus mitis', 'Streptococcus oralis ATCC 35037', 'Streptococcus parasanguinis', 'Streptococcus salivarius subsp. salivarius', 'Streptococcus sanguinis', 'Trueperella bernardiae', 'Varibaculum cambriense')
+  
+  custom_missing <- c('Bacillus idriensis', 'Corynebacterium species')
+  
+  ncbi_gen_missing <- c('Actinomyces naeslundii', 'Anaerococcus octavius', 'Bacillus idriensis', 'Corynebacterium amycolatum', 'Dermabacter hominis', 'Enterobacter asburiae', 'Globicatella sanguinis', 'Kytococcus schroeteri', 'Lactobacillus johnsonii', 'Neisseria macacae', 'Neisseria perflava', 'Neisseria subflava', 'Streptococcus oralis ATCC 35037', 'Corynebacterium species')
+
+  
+  # set up some variables
+  ranger <- data.frame()
+  
+  # need to multiply the qiime confidence levels by 100
+  if (clsfr=="blca") {
+    results$confidence <- results$confidence / 100
+  }
+
+  for (x in seq(0,1,.001)) {
+    #print(sprintf("working on %s", x))
+    # seperate the confusion matrix cells first
+    
+    # True Matches:
+    #   if the query and reference are the same name, 
+    #   and the confidence value is greater than the threshold 
+    #   if species isn't in DB, it never gets assigned as match 
+    cell_d <- ifelse((results$match==1 & results$confidence >= x), 1, 0)
+    
+    # False Matches:
+    #   if the query and reference are not the same name, 
+    #   and the confidence value is greater than the threshold
+    #   doesn't matter if the species is in the DB or not
+    cell_b <- ifelse((results$match==0 & results$confidence >= x), 1, 0)
+    
+    # updating this
+    # instead of creating a logical vector, loading the missing species
+    # list into a variable that gets used when calculating cellC
+    if (db=="gg") {
+      # greengenes database
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% gg_missing
+      check_for_attendence <- gg_missing
+      
+    } else if (db=="genomic") {
+      # ncbi genomic database
+      
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% ncbi_gen_missing
+      check_for_attendence <- ncbi_gen_missing
+      
+    } else if (db=="custom") {
+      # the custom genomic database
+      
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% custom_missing
+      check_for_attendence <- custom_missing
+      
+    } else {
+      #results$attendence <- TRUE
+      check_for_attendence <- c("allgood")
+    }
+    
+    # now for these two conditionals
+    # checking if an element in the logical vector was failing and I didn't see it
+    # the %notin% will evaluate to true or false
+    
+    # There are only two ways for a missed match
+    #    1) a known true match is missed and another record is assigned as a match
+    #    2) a true match that is below the confidence score, AKA a false match when the species is in the database
+    
+    # missed match below threshold:
+    #   if the species is in the DB
+    #   and match==1
+    #   and below the confidence score
+    missed_match_below <- ifelse((results$confidence < x & results$match==1 & (results$query %notin% check_for_attendence)), 1,0)
+    
+    # missed match above threshold:
+    #   if the query is in the database 
+    #   and match==0
+    #   and above the confidence score, 
+    #   then there needs to be a corresponding missed match
+    #   but if it's below the conf score, it's only a MM
+    missed_match_above <- ifelse((results$match==0 & (results$query %notin% check_for_attendence)), 1, 0) 
+
+    cell_c <- missed_match_below + missed_match_above
+    
+    # add cell counts to results dataframe
+    results_confusion <- cbind(results, cell_b,cell_c,cell_d)
+    
+    w <- (sum(results_confusion$cell_d) + sum(results_confusion$cell_c)) / (sum(results_confusion$cell_b) + sum(results_confusion$cell_c) + 2*sum(results_confusion$cell_d))
+    get_recall <- sum(results_confusion$cell_d)/(sum(results_confusion$cell_c) + sum(results_confusion$cell_d))
+    get_precision <- sum(results_confusion$cell_d)/(sum(results_confusion$cell_b) + sum(results_confusion$cell_d))
+    wr <- w*get_recall
+    wp <- (1-w)*get_precision
+    f1 <- (w*get_recall) + ((1-w)*get_precision)
+    
+    # replace 'region' names with more informative ones
+    if (vr=="v3") {
+      variable_region <- "V3"
+    } else if (vr=="v6") {
+      variable_region <- "V6"
+    } else if (vr=="k17") {
+      variable_region <- "V1-V3"
+    } else if (vr=="bbv") {
+      variable_region <- "V2-V3"
+    } else if (vr=="cap") {
+      variable_region <- "V4" 
+    } else if (vr=="k515") {
+      variable_region <- "V4-V6"
+    } else if (vr=="b646") {
+      variable_region <- "V3-V5"
+    } else if (vr=="ffh") {
+      variable_region <- "Ffh V1-V2"
+    } else if (vr=="rpob") {
+      variable_region <- "RpoB V1"
+    } else {
+      variable_region <- "V3-V4"
+    }
+    
+    # replace database
+    if (db=="gg") {
+      the_db <- "Greengenes"
+    } else if (db=="silva") {
+      the_db <- "Silva"
+    } else if (db=="ncbi16") {
+      the_db <- "NCBI 16S"
+    } else if (db=="genomic") {
+      the_db <- "NCBI Genomic"
+    } else {
+      the_db <- "Custom Genomic"
+    }
+    
+    # replace classifier
+    if (clsfr=="blca") {
+      the_clsfr <- "BLCA"
+    } else {
+      the_clsfr <- "Naive Bayes"
+    }
+  
+
+    small_range <- data.frame(weight=w, recall=get_recall, precision=get_precision, fmeasure=f1, weight_r=wr, weight_p=wp, true_match=sum(results_confusion$cell_d) , false_match=sum(results_confusion$cell_b), database=the_db, classifier=the_clsfr, region=variable_region, confidence=x, cellC=sum(results_confusion$cell_c))
+    small_range$confidence <- x
+    ranger <- rbind(ranger, small_range)
+  }
+
+  return(ranger)
+}
+
+total_results <- function(each_result) {
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    #message(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- f1_records(each_result[x][[1]], the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+
+total_by_genus <- function(each_result, genus_filter) {
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    
+    # make a new column to hold the genera
+    add_genus <- each_result[x][[1]] %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+    #message(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- f1_records(add_genus %>% filter(query_genus==genus_filter), the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+```
+
+# ribosome
+
+```{r, eval=FALSE}
+blca_gg_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/gg/", "blca")
+blca_silva_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/silva/", "blca")
+blca_ncbi16_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/ncbi16/", "blca")
+
+qiime_gg_results <- list_of_df("../../taxonomy/processed_files/qiime_validated_outfiles_2020-03-09_19/gg/", "qiime")
+qiime_silva_results <- list_of_df("../../taxonomy/processed_files/qiime_validated_outfiles_2020-03-09_19/silva/", "qiime")
+qiime_ncbi16_results <- list_of_df("../../taxonomy/processed_files/qiime_validated_outfiles_2020-03-09_19/ncbi16/", "qiime")
+
+all_species_16s_results <- c(blca_gg_results, blca_silva_results, blca_ncbi16_results, qiime_gg_results, qiime_silva_results, qiime_ncbi16_results)
+all_species_16s_evaluation <- total_results(all_species_16s_results)
+
+```
+
+```{r, eval=FALSE}
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(all_species_16s_evaluation, paste0("../processed_files/all_species_16s_evaluation_", runtime, ".rds"))
+```
+
+all_species_16s_evaluation_2020-06-03-12-36.rds is before the fix for the MM
+
+all_species_16s_evaluation_2020-06-03-14-32 is after
+
+# protien encoding
+
+```{r}
+pe_whitelist <- c('17957_1_17', '17957_1_75', '16933_8_29', '16933_8_8', '17957_1_66', '17957_1_42', '17957_1_13', '21837_8_27', '16933_8_59', '21837_8_87', '16933_8_17', '17957_1_26', '21837_8_62', '16933_8_1', '21837_8_20', '17957_1_45', '21837_8_68', '21837_8_95', '17957_1_52', '17957_1_79', '16933_8_39', '17957_1_54', '17957_1_68', '17957_1_69', '16933_8_20', '16933_8_25', '17957_1_47', '17957_1_1', '17957_1_11', '21837_8_29', '21837_8_53', '17957_1_9', '16933_8_26', '17957_1_39', '16933_8_31', '16933_8_36', '17957_1_35', '21837_8_92', '16933_8_47', '21837_8_36', '16933_8_56', '16933_8_54', '16933_8_61', '16933_8_62', '16933_8_6', '21837_8_76', '21837_8_69', '21837_8_37', '21837_8_44', '21837_8_71', '21837_8_28', '16933_8_27', '21837_8_52', '21837_8_51', '16933_8_48', '17957_1_77', '17957_1_20', '16933_8_38', '17957_1_88', '16933_8_44', '17957_1_50', '17957_1_49', '21837_8_45', '21837_8_39', '16933_8_19', '21837_8_26', '16933_8_41', '21837_8_59', '21837_8_56', '16933_8_49', '21837_8_46', '21837_8_16', '17957_1_12')
+
+ribo_whitelist <- c('AB618790.1.1522', 'AM084229.1.1497', 'AB818950.1.1501', 'X78720.1.1453', 'ACFH01000038.241.1767', 'FJ960443.1.1495', 'Y17005.1.1451', 'AJ276512.1.1499', 'M77819.1.1481', 'Y07841.1.1407', 'AY904032.1.1367', 'S83624.1.1532', 'AB006658.1.1520', 'AP010889.960839.962368', 'EU086793.1.1470', 'ARGD01000016.303.1794', 'X84244.1.1476', 'AJ309207.1.1475', 'X96497.1.1483', 'ACSH02000003.434.1958', 'ATBY01000001.60.1575', 'Y14651.1.1383', 'AY677186.1.1502', 'AGBA01000019.373.1883', 'X91034.1.1511', 'AB004744.1.1422', 'CP001918.5152784.5154334', 'AB012212.1.1517', 'EU014689.1.1541', 'AGZD01000007.268077.269614', 'AGZE01000005.9117.10656', 'M58744.1.1475', 'AB680901.1.1475', 'AB920570.1.1436', 'X87276.1.1534', 'Y16264.1.1471', 'AJ297722.1.1475', 'AB008206.1.1556', 'AB007908.1.1516', 'AJ575812.1.1555', 'AB008209.1.1566', 'HE573916.1.1560', 'AF243176.1.1496', 'HE573915.1.1543', 'X76329.1.1570', 'AB008211.1.1540', 'CP001628.419927.421558', 'FR726160.1.1591', 'AJ301681.1.1502', 'HF558383.1.1514', 'HF558366.1.1514', 'AJ239291.1.1355', 'AF133538.1.1486', 'CP006032.597533.599065', 'AJ301682.1.1503', 'HE978271.1.1527', 'CP002280.1382146.1383660', 'X87758.1.1467', 'AB681292.1.1476', 'X66101.1.1544', 'AF322002.1.1547', 'AP008934.2304649.2306203', 'D83373.1.1476', 'AB023574.1.1501', 'AFIM01000033.206.1753', 'AB680295.1.1467', 'AF003931.1.1512', 'ADMV01000001.3349.4885', 'AF003933.1.1513', 'AF003928.1.1460', 'X79224.1.1382', 'AJ428402.1.1510', 'AB538437.1.1524')
+```
+
+```{r, echo=FALSE, eval=FALSE}
+
+# the new custom database data
+custom_ribo_genomic_results <- list_of_df("../../taxonomy/processed_files/validated_genomic_outfiles_2020-03-06_02/ribo", "blca")
+custom_pe_genomic_results <- list_of_df("../../taxonomy/processed_files/validated_pe_custom_outfiles_2020-03-10_26", "blca")
+
+# the plain genomic db
+#test_ribo_genomic <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/genomic/", "blca")
+
+
+# I like this
+# applies the filter against the whitelists
+wlstd_custom_ribo_genomic <- lapply(custom_ribo_genomic_results, filter, id %in% ribo_whitelist)
+wlstd_custom_pe_genomic<- lapply(custom_pe_genomic_results, filter, id %in% pe_whitelist)
+
+#wlstd_test_ribo_genomic <- lapply(test_ribo_genomic, filter, id %in% ribo_whitelist)
+
+#wlstd_test_blca_ffh_genomic[[1]]
+
+#get_custom_db <- c(wlstd_custom_ribo_genomic, wlstd_custom_pe_genomic, test_ribo_genomic)
+
+all_species_pe_results <- c(wlstd_custom_ribo_genomic, wlstd_custom_pe_genomic)
+all_species_pe_evaluation <- total_results(all_species_pe_results)
+```
+
+```{r, eval=FALSE}
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(all_species_pe_evaluation, paste0("../processed_files/all_species_pe_evaluation_", runtime, ".rds"))
+```
+
+# filter by just the gg species
+
+```{r}
+all_species_16s_results$blca_b646_ncbi16 %>% filter(query %notin% gg_missing)
+```
+
+```{r, eval=FALSE}
+dumb_down_to_gg <- function(each_result) {
+    gg_missing <- c('Actinotignum schaalii', 'Actinomyces naeslundii', 'Actinomyces neuii subsp. anitratus', 'Actinomyces odontolyticus', 'Actinomyces turicensis', 'Actinomyces urogenitalis DSM 15434', 'Aerococcus christensenii', 'Aerococcus sanguinicola', 'Aerococcus urinae', 'Alloscardovia omnicolens', 'Anaerococcus octavius', 'Bacillus idriensis', 'Bacillus infantis', 'Brevibacterium ravenspurgense', 'Corynebacterium amycolatum', 'Corynebacterium coyleae', 'Corynebacterium matruchotii ATCC 14266', 'Corynebacterium pyruviciproducens ATCC BAA-1742', 'Corynebacterium riegelii', 'Corynebacterium tuscaniense', 'Dermabacter hominis', 'Enterobacter asburiae', 'Enterobacter cloacae subsp. cloacae ATCC 13047', 'Enterococcus faecalis', 'Escherichia coli', 'Facklamia hominis CCUG 36813', 'Facklamia ignava', 'Gardnerella vaginalis ATCC 14018 = JCM 11026', 'Globicatella sanguinis', 'Gordonia terrae', 'Klebsiella pneumoniae', 'Kytococcus schroeteri', 'Lactobacillus crispatus', 'Lactobacillus fermentum', 'Lactobacillus gasseri', 'Lactobacillus jensenii', 'Lactobacillus johnsonii', 'Lactobacillus rhamnosus', 'Moraxella osloensis', 'Neisseria macacae', 'Neisseria perflava', 'Oligella urethralis', 'Propionibacterium avidum ATCC 25577', 'Proteus mirabilis', 'Pseudomonas aeruginosa', 'Staphylococcus hominis subsp. hominis', 'Staphylococcus saprophyticus subsp. saprophyticus ATCC 15305', 'Staphylococcus simulans', 'Staphylococcus warneri', 'Streptococcus equinus', 'Streptococcus gordonii', 'Streptococcus mitis', 'Streptococcus oralis ATCC 35037', 'Streptococcus parasanguinis', 'Streptococcus salivarius subsp. salivarius', 'Streptococcus sanguinis', 'Trueperella bernardiae', 'Varibaculum cambriense')
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    #message(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- f1_records(each_result[x][[1]] %>% filter(query %notin% gg_missing), the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+
+dumber_all_species_16s_evaluation <- dumb_down_to_gg(all_species_16s_results)
+```
+
+```{r, eval=FALSE}
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(dumber_all_species_16s_evaluation, paste0("../processed_files/dumber_all_species_16s_evaluation_", runtime, ".rds"))
+```
+
+```{r}
+#all_species_16s_results$blca_b646_ncbi16$query
+```
+
+# exact matching
+
+```{r}
+exact_f1_records <- function(results, db, vr, clsfr) {
+     #print(sprintf("%s confidence values", length(unique(results$confidence))))
+  # was a little lazy with the column names
+  # after the python script is done reformatting classification
+  # results to something that can be imported as a df, 
+  # the classifer column is labled 'blca', whether it's blca or nb.
+  
+  # these are lists of the species missing from each reference database
+  # in order to calculate the number of missed matches correctly
+  gg_missing <- c('Actinotignum schaalii', 'Actinomyces naeslundii', 'Actinomyces neuii subsp. anitratus', 'Actinomyces odontolyticus', 'Actinomyces turicensis', 'Actinomyces urogenitalis DSM 15434', 'Aerococcus christensenii', 'Aerococcus sanguinicola', 'Aerococcus urinae', 'Alloscardovia omnicolens', 'Anaerococcus octavius', 'Bacillus idriensis', 'Bacillus infantis', 'Brevibacterium ravenspurgense', 'Corynebacterium amycolatum', 'Corynebacterium coyleae', 'Corynebacterium matruchotii ATCC 14266', 'Corynebacterium pyruviciproducens ATCC BAA-1742', 'Corynebacterium riegelii', 'Corynebacterium tuscaniense', 'Dermabacter hominis', 'Enterobacter asburiae', 'Enterobacter cloacae subsp. cloacae ATCC 13047', 'Enterococcus faecalis', 'Escherichia coli', 'Facklamia hominis CCUG 36813', 'Facklamia ignava', 'Gardnerella vaginalis ATCC 14018 = JCM 11026', 'Globicatella sanguinis', 'Gordonia terrae', 'Klebsiella pneumoniae', 'Kytococcus schroeteri', 'Lactobacillus crispatus', 'Lactobacillus fermentum', 'Lactobacillus gasseri', 'Lactobacillus jensenii', 'Lactobacillus johnsonii', 'Lactobacillus rhamnosus', 'Moraxella osloensis', 'Neisseria macacae', 'Neisseria perflava', 'Oligella urethralis', 'Propionibacterium avidum ATCC 25577', 'Proteus mirabilis', 'Pseudomonas aeruginosa', 'Staphylococcus hominis subsp. hominis', 'Staphylococcus saprophyticus subsp. saprophyticus ATCC 15305', 'Staphylococcus simulans', 'Staphylococcus warneri', 'Streptococcus equinus', 'Streptococcus gordonii', 'Streptococcus mitis', 'Streptococcus oralis ATCC 35037', 'Streptococcus parasanguinis', 'Streptococcus salivarius subsp. salivarius', 'Streptococcus sanguinis', 'Trueperella bernardiae', 'Varibaculum cambriense')
+  
+  custom_missing <- c('Bacillus idriensis', 'Corynebacterium species')
+  
+  ncbi_gen_missing <- c('Actinomyces naeslundii', 'Anaerococcus octavius', 'Bacillus idriensis', 'Corynebacterium amycolatum', 'Dermabacter hominis', 'Enterobacter asburiae', 'Globicatella sanguinis', 'Kytococcus schroeteri', 'Lactobacillus johnsonii', 'Neisseria macacae', 'Neisseria perflava', 'Neisseria subflava', 'Streptococcus oralis ATCC 35037', 'Corynebacterium species')
+
+  
+  # set up some variables
+  ranger <- data.frame()
+  
+  # need to multiply the qiime confidence levels by 100
+  if (clsfr=="blca") {
+    results$confidence <- results$confidence / 100
+  }
+  
+  if (clsfr=="exact") {
+    results$confidence <- results$confidence / 100
+  }
+
+
+  for (x in seq(0,1,.001)) {
+    #print(sprintf("working on %s", x))
+    # seperate the confusion matrix cells first
+    
+    # True Matches:
+    #   if the query and reference are the same name, 
+    #   and the confidence value is greater than the threshold 
+    #   if species isn't in DB, it never gets assigned as match 
+    cell_d <- ifelse((results$match==1 & results$confidence >= x), 1, 0)
+    
+    # False Matches:
+    #   if the query and reference are not the same name, 
+    #   and the confidence value is greater than the threshold
+    #   doesn't matter if the species is in the DB or not
+    cell_b <- ifelse((results$match==0 & results$confidence >= x), 1, 0)
+    
+     # updating this
+    # instead of creating a logical vector, loading the missing species
+    # list into a variable that gets used when calculating cellC
+    if (db=="gg") {
+      # greengenes database
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% gg_missing
+      check_for_attendence <- gg_missing
+      
+    } else if (db=="genomic") {
+      # ncbi genomic database
+      
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% ncbi_gen_missing
+      check_for_attendence <- ncbi_gen_missing
+      
+    } else if (db=="custom") {
+      # the custom genomic database
+      
+      # make a column showing if the query is in the database or not
+      #results$attendence <- results$query %notin% custom_missing
+      check_for_attendence <- custom_missing
+      
+    } else {
+      #results$attendence <- TRUE
+      check_for_attendence <- c("allgood")
+    }
+    
+    # now for these two conditionals
+    # checking if an element in the logical vector was failing and I didn't see it
+    # the %notin% will evaluate to true or false
+    
+    # There are only two ways for a missed match
+    #    1) a known true match is missed and another record is assigned as a match
+    #    2) a true match that is below the confidence score, AKA a false match when the species is in the database
+    
+    # missed match below threshold:
+    #   if the species is in the DB
+    #   and match==1
+    #   and below the confidence score
+    missed_match_below <- ifelse((results$confidence < x & results$match==1 & (results$query %notin% check_for_attendence)), 1,0)
+    
+    # missed match above threshold:
+    #   if the query is in the database 
+    #   and match==0
+    #   and above the confidence score, 
+    #   then there needs to be a corresponding missed match
+    #   but if it's below the conf score, it's only a MM
+    missed_match_above <- ifelse((results$match==0 & (results$query %notin% check_for_attendence)), 1, 0) 
+
+    cell_c <- missed_match_below + missed_match_above
+    
+    # add cell counts to results dataframe
+    results_confusion <- cbind(results, cell_b,cell_c,cell_d)
+    
+    w <- (sum(results_confusion$cell_d) + sum(results_confusion$cell_c)) / (sum(results_confusion$cell_b) + sum(results_confusion$cell_c) + 2*sum(results_confusion$cell_d))
+    get_recall <- sum(results_confusion$cell_d)/(sum(results_confusion$cell_c) + sum(results_confusion$cell_d))
+    get_precision <- sum(results_confusion$cell_d)/(sum(results_confusion$cell_b) + sum(results_confusion$cell_d))
+    wr <- w*get_recall
+    wp <- (1-w)*get_precision
+    f1 <- (w*get_recall) + ((1-w)*get_precision)
+    
+    # replace 'region' names with more informative ones
+    if (vr=="v3") {
+      variable_region <- "V3"
+    } else if (vr=="v6") {
+      variable_region <- "V6"
+    } else if (vr=="k17") {
+      variable_region <- "V1-V3"
+    } else if (vr=="bbv") {
+      variable_region <- "V2-V3"
+    } else if (vr=="cap") {
+      variable_region <- "V4" 
+    } else if (vr=="k515") {
+      variable_region <- "V4-V6"
+    } else if (vr=="b646") {
+      variable_region <- "V3-V5"
+    } else if (vr=="ffh") {
+      variable_region <- "Ffh V1-V2"
+    } else if (vr=="rpob") {
+      variable_region <- "RpoB V1"
+    } else {
+      variable_region <- "V3-V4"
+    }
+    
+    # replace database
+    if (db=="gg") {
+      the_db <- "Greengenes"
+    } else if (db=="silva") {
+      the_db <- "Silva"
+    } else if (db=="ncbi16") {
+      the_db <- "NCBI 16S"
+    } else if (db=="genomic") {
+      the_db <- "NCBI Genomic"
+    } else {
+      the_db <- "Custom Genomic"
+    }
+    
+    # replace classifier
+    if (clsfr=="blca") {
+      the_clsfr <- "BLCA"
+    } else if (clsfr=="exact") {
+      the_clsfr <- "Exact Matching"
+    } else {
+      the_clsfr <- "Naive Bayes"
+    }
+  
+
+    small_range <- data.frame(weight=w, recall=get_recall, precision=get_precision, fmeasure=f1, weight_r=wr, weight_p=wp, true_match=sum(results_confusion$cell_d) , false_match=sum(results_confusion$cell_b), database=the_db, classifier=the_clsfr, region=variable_region, confidence=x, cellC=sum(results_confusion$cell_c))
+    small_range$confidence <- x
+    ranger <- rbind(ranger, small_range)
+  }
+
+  return(ranger)
+}
+
+exact_total_results <- function(each_result) {
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    #print(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- exact_f1_records(each_result[x][[1]], the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+```
+
+```{r, eval=FALSE}
+# the exact match folder is newer than the first time I ran this
+exact_silva_results <- list_of_df("../../taxonomy/processed_files/validated_exact_match_outfiles_2020-03-31_30", "exact")
+blca_silva_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/silva/", "blca")
+qiime_silva_results <- list_of_df("../../taxonomy/processed_files/qiime_validated_outfiles_2020-03-09_19/silva/", "qiime")
+
+
+all_16s_exact_results <- c(exact_silva_results, blca_silva_results, qiime_silva_results)
+all_16s_exact_evaluation <- exact_total_results(all_16s_exact_results)
+
+```
+
+
+```{r, eval=FALSE}
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(all_16s_exact_evaluation, paste0("../processed_files/all_16s_exact_evaluation_", runtime, ".rds"))
+```
+
+# select genera
+
+## prep for genus level
+
+
+```{r, eval=FALSE}
+all_res_db <- c(blca_gg_results, blca_silva_results, blca_ncbi16_results, qiime_gg_results, qiime_silva_results, qiime_ncbi16_results)
+
+test <- blca_ncbi16_results$blca_b646_ncbi16 %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+actinomyces_results <- total_by_genus(all_res_db, "Actinomyces")
+
+staphylococcus_results <- total_by_genus(all_res_db, "Staphylococcus")
+
+corynebacterium_results <- total_by_genus(all_res_db, "Corynebacterium")
+
+lactobacillus_results <- total_by_genus(all_res_db, "Lactobacillus")
+
+streptococcus_results <- total_by_genus(all_res_db, "Streptococcus")
+
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(actinomyces_results, paste0("../processed_files/evaluate_by_genus/actinomyces_results_", runtime, ".rds"))
+saveRDS(staphylococcus_results, paste0("../processed_files/evaluate_by_genus/staphylococcus_results_", runtime, ".rds"))
+saveRDS(corynebacterium_results, paste0("../processed_files/evaluate_by_genus/corynebacterium_results_", runtime, ".rds"))
+saveRDS(lactobacillus_results, paste0("../processed_files/evaluate_by_genus/lactobacillus_results_", runtime, ".rds"))
+saveRDS(streptococcus_results, paste0("../processed_files/evaluate_by_genus/streptococcus_results_", runtime, ".rds"))
+
+```
+
+```{r, eval=FALSE}
+everyone_else <- c("Actinomyces", "Staphylococcus", "Corynebacterium", "Lactobacillus", "Streptococcus")
+
+others_by_genus <- function(each_result, genus_filter) {
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    
+    # make a new column to hold the genera
+    add_genus <- each_result[x][[1]] %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+    #message(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- f1_records(add_genus %>% filter(query_genus %notin% genus_filter), the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+
+others_results <- others_by_genus(all_res_db, everyone_else)
+
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(others_results, paste0("../processed_files/evaluate_by_genus/all_others_results_", runtime, ".rds"))
+```
+
+
+# testing
+
+I also need to write some tests so I dont' lose my mind.
+
+Want two databases, one with all query records and one that is missing 3. 3 levels of confidence. Correct and incorrect matches.
+
+Setup one has a database that's missing 3 query records, setup two has all query records available.
+
+```{r}
+db_one <- c("g", "h", "i")
+db_two <- c("z")
+test_results_one <- data.frame(match=c(1,1,1,0,0,0,0,0,0), confidence=c(.9,.6,.3,.9,.6,.3,.9,.6,.3), query=c("a", "b", "c", "d", "e", "f", "g", "h", "i"), 
+                               blca=c("a", "b", "c", "e", "d", "e", "d", "e", "f"))
+test_results_two <- data.frame(match=c(1,1,1,0,0,0,1,1,1), confidence=c(.9,.6,.3,.9,.6,.3,.9,.6,.3), query=c("a", "b", "c", "d", "e", "f", "g", "h", "i"), 
+                               blca=c("a", "b", "c", "e", "d", "e", "g", "h", "i"))
+```
+
+
+
+
+## one
+
+at the moment, f1_records() thinks all records are in the database. So the confusion matrix breaks down like this
+
+tm=3
+fm=6
+mm=6
+tnm=66
+
+r=.3333
+p=.3333
+f=.3333
+
+when I get it set up so it works for missing records it breaks down like this:
+
+tm=3
+fm=6
+mm=3
+tnm=69
+
+r=.5
+p=.33
+f=.398
+
+
+## two 
+
+tm=6
+fm=3
+mm=3
+tnm=69
+
+r=.667
+p=.667
+f=.667
+
+
+
+
+```{r}
+test_one_evaluation <- f1_records(test_results_one, "silva", "v3", "qiime")
+test_two_evaluation <- f1_records(test_results_two, "silva", "v3", "qiime")
+```
+
+```{r}
+test_conf_0 <- test_one_evaluation %>% filter(confidence==0)
+test_conf_0$recall == 1/3
+test_conf_0$precision == 1/3
+test_conf_0$fmeasure == 1/3
+```
+
+All is well
+
+```{r}
+test_results_two %>% filter(confidence > .3)
+```
+
+For the test_two and confidence > .3, the breakdown is like this:
+
+tm=4
+fm=2
+mm=2
+tnm=73
+
+p=.6667
+r=.6667
+f=.6667
+
+```{r}
+test_conf_0 <- test_two_evaluation %>% filter(confidence == .3)
+test_conf_0$recall == 2/3
+test_conf_0$precision == 2/3
+test_conf_0$fmeasure == 2/3
+```
+
+all is well
+
+```{r, fig.height=5, fig.width=6, echo=FALSE}
+ggplot(test_two_evaluation, aes(x=confidence, y=fmeasure)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="testing", x="confidence", y="fmeasure")
+```
+
+```{r, fig.width=6, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(test_two_evaluation) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="test again", x="Recall", y="F value")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+

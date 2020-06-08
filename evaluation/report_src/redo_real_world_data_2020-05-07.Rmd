@@ -1,0 +1,1355 @@
+---
+title: "stop writing data on paper"
+author: "Carter Hoffman"
+date: "_last edited `r Sys.Date()`_"
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  html_document:
+      toc: true
+      toc_depth: 4
+      toc_float: true
+      theme: readable
+      highlight: tango
+
+---
+```{r, eval=FALSE, echo=FALSE}
+    pdf_document:
+        toc: true
+        toc_depth: 2
+        df_print: kable
+        
+    html_document:
+      toc: true
+      toc_depth: 2
+      toc_float: true
+      theme: readable
+      highlight: tango
+```
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+library(wesanderson)
+library(lubridate)
+library(ShortRead)
+library(scales)
+library(phyloseq)
+library(patchwork)
+
+```
+
+# background
+
+As described in their paper, Thomas-White et al obtained urine samples from 77 female subjects with and without symptoms of overactive bladder. Each urine sample was cultured by expanded quantitative urine culture (EQUC), the successfully cultured bacteria isolated, and whole genome sequencing performed on the isolates. The list of bacteria species found in each sample was obtained from the supplementary information of White et al 2018.
+
+Targeted amplicon sequences of a set of those urine samples, using the V4 region of the 16S rRNA gene sequence, was generously provided by Alan Wolfe. The raw sequence reads were processed with DADA2 version 1.14.1 to generate amplicon sequence variants (ASVs). The ASVs were classified with BLCA using the Silva, Greengenes, and NCBI 16S databases as described in this paper.
+
+# load in data
+
+```{r, echo=FALSE}
+# this Rdata created in the /taxonomy/v4_seq_data_viz_2020-04-13.rmd file
+load("../../taxonomy/processed_files/resources_for_heatmaps/all_objects_2020-04-16-17-31.Rdata")
+```
+
+This has all the sequence data classified by blca for the 3 databases. value=1 is identified by equc, value=2 is identified by blca/v4 sequencing/db, value=3 is identified by both. value=0 means that species/sample pair doesn't exist.
+
+```{r, echo=FALSE}
+
+# from stackoverflow https://stackoverflow.com/questions/38351820/negation-of-in-in-r
+# it was easier to define a not-in function than redo all those lists
+`%notin%` <- Negate(`%in%`)
+
+
+list_of_df <- function(path_to_dir, prefix) {
+  # got tired of loading all the csv files individually, 
+  # so this function does it in batch. Reads all filenames 
+  # in a dir, then creates a df from the csv, then adds names 
+  # to the growing list of dataframes.
+  get_filenames <- list.files(path_to_dir, full.names = TRUE)
+  build_csv_df <- lapply(get_filenames, read.csv, stringsAsFactors=FALSE)
+
+  grow_names <- vector()
+  for (g in get_filenames) {
+    new_name <- paste(prefix, strsplit(basename(g), "_")[[1]][3], strsplit(basename(g), "_")[[1]][5], sep="_")
+    grow_names <- c(grow_names, new_name)
+  }
+  names(build_csv_df) <- grow_names
+  return(build_csv_df)
+}
+
+# the in silico results
+blca_gg_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/gg/", "blca")
+blca_silva_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/silva/", "blca")
+blca_ncbi16_results <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/ncbi16/", "blca")
+
+```
+
+```{r, echo=FALSE}
+# these were imported from the Rdata file
+# convert all those integers to characters for the graphs
+mashup_silva[] <- lapply(mashup_silva, function(x) as.character(x))
+mashup_ncbi16[] <- lapply(mashup_ncbi16, function(x) as.character(x))
+mashup_gg[] <- lapply(mashup_gg, function(x) as.character(x))
+
+```
+
+```{r, echo=FALSE}
+long_silva_heatmap <- pivot_longer(mashup_silva, cols=-species)
+long_silva_heatmap$database <- "Silva"
+
+long_ncbi_heatmap <- pivot_longer(mashup_ncbi16, cols=-species)
+long_ncbi_heatmap$database <- "NCBI 16S"
+
+
+long_gg_heatmap <- pivot_longer(mashup_gg, cols=-species)
+long_gg_heatmap$database <- "Greengenes"
+
+
+long_common_heatmap <- rbind(long_silva_heatmap, long_ncbi_heatmap)
+long_common_heatmap <- rbind(long_common_heatmap, long_gg_heatmap)
+```
+
+
+```{r, echo=FALSE}
+# get the species names from the in silico blca results
+# all confidence scores included here
+v4_in_silva <- (blca_silva_results$blca_cap_silva %>% filter(match==1))$blca
+
+v4_in_gg <- (blca_gg_results$blca_cap_gg %>% filter(match==1))$blca
+
+v4_in_ncbi <- (blca_ncbi16_results$blca_cap_ncbi %>% filter(match==1))$blca
+```
+
+
+```{r, echo=FALSE}
+# the master set of sample names (C019, OAB072, etc) for silva, ncbi, and greengenes
+v4_samples_seq_names <- unique((long_ncbi_heatmap)$name)
+#length(v4_samples_seq_names)
+
+master_set <- long_heatmap %>% filter((value==1) & (name %in% v4_samples_seq_names))
+master_set$database <- "master"
+
+```
+
+
+# work out the evaluations
+
+"classification scheme" is too long to type, calling it cs.
+
+## start with the full dataset
+
+`long_heatmap` has all the species/sample pairs that were identified with wgs.
+
+```{r, fig.height=14, fig.width=13, echo=FALSE}
+ggplot(long_heatmap %>% filter(value=='1'), aes(y=species, x=name)) + 
+  geom_point(size=3)+
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="The Thomas-White dataset", subtitle="Grown by expanded urine culture (EQUC) and\nidentified by whole genome sequencing", x="Sample", y="Species in dataset")
+```
+
+```{r, fig.height=14, fig.width=13, echo=FALSE}
+ggplot(long_heatmap %>% filter(value=='1'), aes(y=species, x=name)) + 
+  geom_point(size=3)+
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  labs(x="", y="")
+```
+
+
+`master_set` has the species/samples that were sequenced by v4. This is the data that's available for cs to work on.
+
+```{r, fig.height=10, fig.width=8, echo=FALSE}
+ggplot(master_set, aes(y=species, x=name)) + 
+  geom_point(size=3)+
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="The Thomas-White dataset\nsequenced with V4", subtitle="", x="Sample", y="Species in dataset")
+```
+
+```{r, fig.height=10, fig.width=8, echo=FALSE}
+ggplot(master_set, aes(y=species, x=name)) + 
+  geom_point(size=3)+
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  labs(x="Sample", y="Species in dataset")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## subset KTW by the 24 v4 sequenced samples
+
+Get the names of the samples sequenced by v4. 
+
+```{r}
+v4_tas_sample_names <- unique(master_set$name)
+```
+
+plot them. This is the data that's available for cs to work on.
+
+```{r, fig.height=14, fig.width=13, echo=FALSE}
+ggplot() + 
+  geom_point(data=(long_heatmap %>% filter(value=='1')), aes(y=species, x=name), size=3, color="gray70") +
+  geom_point(data=(long_heatmap %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=4, color="black") +
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="The Thomas-White dataset", subtitle="Grown by expanded urine culture (EQUC) and\nidentified by whole genome sequencing", x="sample", y="Species in dataset")
+```
+
+```{r, fig.height=14, fig.width=13, echo=FALSE}
+ggplot() + 
+  geom_point(data=(long_heatmap %>% filter(value=='1')), aes(y=species, x=name), size=3, color="gray70") +
+  geom_point(data=(long_heatmap %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=4, color="black") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  labs(x="", y="")
+```
+
+
+
+```{r, fig.height=12, fig.width=12, echo=FALSE}
+rect_fill = wes_palette("Zissou1")[4]
+rect_alpha = .3
+
+ggplot(master_set, aes(y=species, x=name)) + 
+    geom_point(data=long_heatmap %>% filter(value=='1'), aes(y=species, x=name),color="white", size=3) + 
+  annotate("rect", xmin=0, xmax=2.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  annotate("rect", xmin=5.5, xmax=7.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  annotate("rect", xmin=15.5, xmax=19.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  annotate("rect", xmin=22.5, xmax=23.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+
+  annotate("rect", xmin=41.5, xmax=42.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  annotate("rect", xmin=43.5, xmax=45.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  annotate("rect", xmin=46.5, xmax=47.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +  
+  annotate("rect", xmin=48.5, xmax=49.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  annotate("rect", xmin=51.5, xmax=54.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  
+  annotate("rect", xmin=56.5, xmax=57.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  annotate("rect", xmin=60.5, xmax=61.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  annotate("rect", xmin=62.5, xmax=66.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  annotate("rect", xmin=71.5, xmax=72.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) + 
+  
+  geom_point(data=long_heatmap %>% filter(value=='1'), aes(y=species, x=name),color="black", size=3) + 
+  #geom_point(data=(long_heatmap %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=4, color="black") +
+  theme_classic() +
+  theme(axis.text.x = element_blank(), axis.text.y = element_blank(), axis.title.y = element_blank(), axis.title.x = element_blank())
+```
+
+```{r, fig.height=12, fig.width=12, echo=FALSE}
+ggplot() + 
+  geom_point(data=(long_heatmap %>% filter(value=='1')), aes(y=species, x=name), size=3, color="gray70") +
+  geom_point(data=(long_heatmap %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=4, color="black") +
+  theme_classic() +
+    theme(axis.text.x = element_blank(), axis.text.y = element_blank(), axis.title.y = element_blank(), axis.title.x = element_blank())
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+## subset v4 seq set by the 3 cs
+
+`v4_in_gg` has the species that the in silico gg/v4/blca correctly identified. These are what should be identified by the v4 tas.
+
+```{r}
+v4_in_gg
+```
+
+plot them.
+
+```{r, fig.height=14, fig.width=13, echo=FALSE}
+ggplot() + 
+  geom_point(data=(long_heatmap %>% filter(value=='1')), aes(y=species, x=name), size=4, color="gray60") +
+  geom_point(data=(long_heatmap %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=5, color="red") +
+  geom_point(data=(long_heatmap %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=2, color="blue") +
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=20), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="The Thomas-White dataset", subtitle="Red (cols) are the names that were sequenced by v4\nblue (rows) are the species that were correctly identified in silico by v4/gg/blca", x="sample", y="Species in dataset")
+```
+
+Red are the names that were sequenced by v4, blue are the species that were correctly identified in silico by v4/gg/blca.
+
+some overlap, some don't. This should all be in the `long_gg_heatmap` data.
+
+```{r, fig.height=10, fig.width=10, echo=FALSE}
+
+gg_wgs <- unique((long_gg_heatmap %>% filter(value=='1'))$species)
+gg_v4 <- unique((long_gg_heatmap %>% filter(value=='2'))$name)
+gg_both <- unique((long_gg_heatmap %>% filter(value=='3')))
+
+ggplot() + 
+  geom_point(data=(master_set %>% filter(value=='1')), aes(y=species, x=name), size=9, color="gray60") +
+  #geom_point(data=(master_set %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=7, color="red") +
+  geom_point(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=6, color="blue") +
+    geom_point(data=(long_gg_heatmap %>% filter(value=='3')), aes(y=species, x=name), size=3, color="white") +
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="The Thomas-White dataset", subtitle="gray (cols) are the names that were sequenced by v4\nblue (rows) are the species that were correctly identified in silico by v4/gg/blca\nwhite are results from V4 tas, identified by v4/gg/blca", x="sample", y="Species in dataset")
+
+```
+
+reading across the rows, if any true match occurs, then the species is identified
+true match - blue/white
+false match - gray/white
+missed match - blue/gray
+true nonmatch - gray
+
+```{r, fig.height=15, fig.width=18}
+gg_plot <- ggplot() + 
+    geom_point(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=9, color="black") +
+    geom_point(data=(long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==1 | value==3))), aes(y=species, x=name, color=value), size=6) +
+
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="long_gg_heatmap", subtitle="", x="sample", y="Species in dataset")
+
+master_gg_plot <- ggplot() + 
+  geom_point(data=(master_set %>% filter(value=='1')), aes(y=species, x=name), size=9, color="gray60") +
+  #geom_point(data=(master_set %>% filter(value=='1' & (name %in% v4_tas_sample_names))), aes(y=species, x=name), size=7, color="red") +
+  geom_point(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=6, color="blue") +
+    geom_point(data=(long_gg_heatmap %>% filter(value=='3')), aes(y=species, x=name), size=3, color="white") +
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="master_set", subtitle="gray (cols) are the names that were sequenced by v4\nblue (rows) are the species that were correctly identified in silico by v4/gg/blca\nwhite are results from V4 tas, identified by v4/gg/blca", x="sample", y="Species in dataset")
+
+master_gg_plot + gg_plot
+
+```
+
+## write a goddam function to split out the data for matrix cells
+
+
+
+
+```{r, fig.height=15, fig.width=8}
+
+true_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==3) %>% filter(species %in% v4_in_gg))
+missed_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==1) %>% filter(species %in% v4_in_gg))
+false_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==3) %>% filter(species %notin% v4_in_gg))
+true_nonmatch <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==1) %>% filter(species %notin% v4_in_gg))
+
+ ggplot() + 
+    geom_point(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=9, color="black") +
+    geom_point(data=(long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==1 | value==3))), aes(y=species, x=name, color=value), size=6) +
+  geom_point(data=true_match, aes(y=species, x=name), size=3, color="white") +
+  theme_classic() +
+    theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  #scale_x_discrete(labels=c("ncbi_16s" = "NCBI 16S", "silva" = "Silva","genomic" = "NCBI Genomic", "gg"="Greengenes"))+
+  labs(title="long_gg_heatmap", subtitle="", x="sample", y="Species in dataset")
+```
+
+
+```{r, fig.height=12, fig.width=8}
+rect_fill = wes_palette("Zissou1")[4]
+rect_alpha = .02
+ggplot() + 
+  # true match
+  geom_point(data=(long_gg_heatmap %>% filter(name=="OAB072" & species=="Streptococcus anginosus")), aes(y=species, x=name), color="black", size=7) +
+  # missed match
+  geom_point(data=(long_gg_heatmap %>% filter(name=="OAB032" & species=="Propionibacterium acnes")), aes(y=species, x=name), color="black", size=7) +
+  # false match
+  geom_point(data=(long_gg_heatmap %>% filter(name=="OAB052" & species=="Lactobacillus iners")), aes(y=species, x=name), color="black", size=7) +
+  # true non-match
+  geom_point(data=(long_gg_heatmap %>% filter(name=="OAB052" & species=="Gardnerella vaginalis")), aes(y=species, x=name), color="black", size=7) +
+  
+  # predicted to identify in silico
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=10.5, ymax=11.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=12.5, ymax=13.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=24.5, ymax=25.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=26.5, ymax=27.5, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=31.5, ymax=32.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=33.5, ymax=34.5, fill=rect_fill, alpha=rect_alpha) +
+
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=36.5, ymax=39.5, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=45.5, ymax=46.5, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_point(data=(long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==1 | value==3))), aes(y=species, x=name, color=value), size=5) +
+  scale_color_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4])) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11), legend.position = "none") +
+  labs(x="", y="")
+```
+
+```{r, fig.height=12, fig.width=8}
+rect_fill = wes_palette("Zissou1")[4]
+rect_alpha = .02
+ggplot() + 
+  # predicted to identify in silico
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=10.5, ymax=11.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=12.5, ymax=13.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=24.5, ymax=25.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=26.5, ymax=27.5, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=31.5, ymax=32.5, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=33.5, ymax=34.5, fill=rect_fill, alpha=rect_alpha) +
+
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=36.5, ymax=39.5, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=-Inf, xmax=Inf, ymin=45.5, ymax=46.5, fill=rect_fill, alpha=rect_alpha) +
+
+  geom_point(data=(long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==1 | value==3))), aes(y=species, x=name), size=5, color=wes_palette("Zissou1")[2]) +
+  #scale_color_manual(values = c(wes_palette("Zissou1")[4])) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  labs(x="", y="")
+```
+
+```{r, fig.height=12, fig.width=8}
+
+ggplot() + 
+  geom_point(data=(long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==1 | value==3))), aes(y=species, x=name), size=5, color=wes_palette("Zissou1")[2]) +
+  theme_classic() +
+  #theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+    theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 90, hjust = 1)) +
+  labs(title="V4 validation set", subtitle="Number of species = 49\nNumber of species/sample pairs = 106", x="samples", y="remaining species from the Thomas-White dataset")
+```
+
+```{r, fig.height=12, fig.width=8, eval=FALSE, echo=FALSE}
+rect_fill = wes_palette("Zissou1")[4]
+rect_alpha = .02
+ggplot() + 
+
+  # empty data
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=1.5, xmax=2.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=4.5, xmax=9.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=11.5, xmax=12.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=13.5, xmax=14.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=22.5, xmax=23.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  
+  geom_point(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), aes(y=species, x=name), size=5, color=wes_palette("Zissou1")[2]) +
+  geom_point(data=(master_set %>% filter((name %in% v4_tas_sample_names) & (value==1 ) )), aes(y=species, x=name, color=NA)) +
+  scale_color_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4])) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11), ) +
+  labs(title="long_gg_heatmap", subtitle="", x="sample", y="Species in dataset")
+```
+
+```{r, fig.height=4, fig.width=8, echo=FALSE}
+exclude <- c("C009","C030","C031","C032","C033","C042","OAB021","OAB052")
+ex_1 <- long_gg_heatmap %>% filter((species %in% v4_in_gg) & (value>=0))
+ex_2 <- ex_1%>% filter((name %notin% exclude))
+
+exclude_sp <- c("Veillonella parvula", "Morganella morganii", "Bifidobacterium longum")
+ex_3 <- ex_1 %>% filter((species %notin% exclude_sp))
+
+rect_fill = "gray60"
+
+ggplot() +
+      geom_point(data=ex_3, aes(y=species, x=name), shape = 21, fill = "white", stroke = 1, color="white", size=6)+
+    # empty data
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=1.5, xmax=2.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=4.5, xmax=9.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=11.5, xmax=12.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=13.5, xmax=14.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+  geom_rect(data=(master_set %>% filter(value=='1' & (species %in% v4_in_gg))), xmin=22.5, xmax=23.5, ymin=-Inf, ymax=Inf, fill=rect_fill, alpha=rect_alpha) +
+
+  geom_point(data=long_gg_heatmap %>% filter((species %in% v4_in_gg) & (value==1 | value==3)), aes(y=species, x=name), color=wes_palette("Zissou1")[2], size=5)+
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11)) +
+  labs(x="", y="")
+```
+
+```{r, fig.height=4, fig.width=7, echo=FALSE}
+get_tm_mm_gg <- long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==3 | value==1)) %>% filter(species %in% v4_in_gg)
+ggplot(get_tm_mm_gg, aes(y=species, x=name)) +
+  geom_point(size=5, color=wes_palette("Zissou1")[2])+
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=14), axis.text = element_text(size=11), legend.position = "none") +
+  labs(x="", y="")
+```
+  
+  
+```{r, fig.height=5, fig.width=8, echo=FALSE}
+get_tm_mm_gg <- long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & (value==3 | value==1)) %>% filter(species %in% v4_in_gg)
+center <- ggplot(get_tm_mm_gg, aes(y=species, x=name, color=value)) +
+  geom_point(size=5)+
+  scale_color_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4])) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1), legend.position = "none") +
+  labs(y="Predicted species set", x="sample")
+
+sample_hist <- ggplot(get_tm_mm_gg, aes( x=name, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.y = element_blank()) +
+    labs(title="Identification of the Greengenes predicted isolate set", subtitle="Classification scheme - Greengenes database, BLCA classifier and 16S rRNA V4 region")
+
+spec_hist <- ggplot(get_tm_mm_gg, aes( x=species, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  coord_flip() +
+  scale_y_continuous(breaks=seq(0,10,2)) +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.x = element_blank())
+
+wrap_plots(sample_hist, plot_spacer(), center , spec_hist, nrow = 2, widths = c(1, .3), heights = c(.3, 1)) + 
+  plot_layout(guides = 'collect')
+```
+
+```{r, fig.height=3, fig.width=8, echo=FALSE}
+wrap_plots(center, spec_hist, nrow = 1, widths = c(1, .3)) + plot_layout(guides = 'collect')
+```
+
+```{r, fig.height=10, fig.width=9, echo=FALSE}
+get_tm_mm_ncbi <- long_ncbi_heatmap %>% filter(name %in% v4_tas_sample_names & (value==3 | value==1)) %>% filter(species %in% v4_in_ncbi)
+
+center <- ggplot(get_tm_mm_ncbi, aes(y=species, x=name, color=value)) +
+  geom_point(size=5)+
+  scale_color_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4])) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1), legend.position = "none") +
+  labs(y="Predicted species set", x="sample")
+
+sample_hist <- ggplot(get_tm_mm_ncbi, aes( x=name, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.y = element_blank()) +
+    labs(title="Identification of the NCBI 16S predicted isolate set", subtitle="Classification scheme - NCBI 16S database, BLCA classifier and 16S rRNA V4 region")
+
+spec_hist <- ggplot(get_tm_mm_ncbi, aes( x=species, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  coord_flip() +
+  scale_y_continuous(breaks=seq(0,10,2)) +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.x = element_blank())
+
+wrap_plots(sample_hist, plot_spacer(), center , spec_hist, nrow = 2, widths = c(1, .3), heights = c(.3, 1)) + 
+  plot_layout(guides = 'collect')
+```
+
+```{r, fig.height=8, fig.width=9, echo=FALSE}
+wrap_plots(center, spec_hist, nrow = 1, widths = c(1, .3)) + plot_layout(guides = 'collect')
+```
+
+```{r, fig.height=7, fig.width=9, echo=FALSE}
+get_tm_mm_silva <- long_silva_heatmap %>% filter(name %in% v4_tas_sample_names & (value==3 | value==1)) %>% filter(species %in% v4_in_silva)
+
+center <- ggplot(get_tm_mm_silva, aes(y=species, x=name, color=value)) +
+  geom_point(size=5)+
+  scale_color_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4])) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1), legend.position = "none") +
+  labs(y="Predicted species set", x="sample")
+
+sample_hist <- ggplot(get_tm_mm_silva, aes( x=name, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.y = element_blank()) +
+    labs(title="Identification of the Silva predicted isolate set", subtitle="Classification scheme - Silva database, BLCA classifier and 16S rRNA V4 region")
+
+spec_hist <- ggplot(get_tm_mm_silva, aes( x=species, fill=factor(value, levels=c("1","3")))) +
+  geom_bar(position="stack") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4]), labels=c("Expected", "16S V4 amplicon"), name="Identification") + 
+  theme_classic() +
+  coord_flip() +
+  scale_y_continuous(breaks=seq(0,10,2)) +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.x = element_blank())
+
+wrap_plots(sample_hist, plot_spacer(), center , spec_hist, nrow = 2, widths = c(1, .3), heights = c(.3, 1)) + 
+  plot_layout(guides = 'collect')
+```
+
+```{r, fig.height=5, fig.width=9, echo=FALSE}
+wrap_plots(center, spec_hist, nrow = 1, widths = c(1, .3)) + plot_layout(guides = 'collect')
+```
+
+
+```{r, fig.height=10, fig.width=18, echo=FALSE}
+
+full_silva <- ggplot() +
+  geom_point(data=master_set, aes(y=species, x=name, color=database), size=3)+
+  geom_point(data=get_tm_mm_silva, aes(y=species, x=name, color=value), size=5) +
+  scale_color_manual(values = c(wes_palette("Zissou1")[2], wes_palette("Zissou1")[4], "gray80"), labels=c("Predicted", "Validated", "Not predicted"), name="Outcome") + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1), axis.text.y = element_blank(), axis.ticks.y=element_blank(), axis.title.y = element_blank(),text = element_text(size=17), axis.text = element_text(size=14), plot.subtitle=element_text(size=14)) +
+  labs(title="Silva classification scheme", subtitle="Using the 16S rRNA V4 identifier,\nBLCA classifier and Silva database")
+
+full_gg <- ggplot() +
+  geom_point(data=master_set, aes(y=species, x=name, color=database), size=3)+
+  geom_point(data=get_tm_mm_gg, aes(y=species, x=name, color=value), size=5) +
+  scale_color_manual(values = c(wes_palette("Zissou1")[2], wes_palette("Zissou1")[4], "gray80"), labels=c("Predicted", "Validated", "Not predicted"), name="Outcome") + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1), axis.text.y = element_blank(), axis.ticks.y=element_blank(), axis.title.y = element_blank(),text = element_text(size=17), axis.text = element_text(size=14), plot.subtitle=element_text(size=14)) +
+  labs(title="Greengenes classification scheme", subtitle="Using the 16S rRNA V4 identifier,\nBLCA classifier and Greengenes database")
+
+full_ncbi <- ggplot() +
+  geom_point(data=master_set, aes(y=species, x=name, color=database), size=3)+
+  geom_point(data=get_tm_mm_ncbi, aes(y=species, x=name, color=value), size=5) +
+  scale_color_manual(values = c(wes_palette("Zissou1")[2], wes_palette("Zissou1")[4], "gray80"), labels=c("Predicted", "Validated", "Not predicted"), name="Outcome") + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust=1),text = element_text(size=17), axis.text = element_text(size=14), plot.subtitle=element_text(size=14)) +
+  labs(title="NCBI 16S\nclassification scheme", subtitle="Using the 16S rRNA V4 identifier,\nBLCA classifier and NCBI 16S database")
+
+(full_ncbi + full_silva + full_gg) + plot_layout(guides = 'collect')
+```
+
+
+```{r, eval=FALSE}
+  get_true_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==3) %>% filter(species %in% v4_in_gg))
+  get_missed_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==1) %>% filter(species %in% v4_in_gg))
+  get_false_match <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==3) %>% filter(species %notin% v4_in_gg))
+  get_true_nonmatch <- (long_gg_heatmap %>% filter(name %in% v4_tas_sample_names & value==1) %>% filter(species %notin% v4_in_gg))
+  
+  true_match <- length(unique(get_true_match$species))
+  false_match <- length(unique(get_false_match$species))
+  
+  # if any row of missed matches has a true match, that species is TM
+  # if the whole row is only missed matches, then the species is a MM
+  missed_match <- length(setdiff(unique(get_missed_match$species), unique(get_true_match$species)))
+  
+  # if any row of true-nonmatches has a false match, that species is FM
+  # if the whole row is only true-nonmatches, then the species is a TNM
+  true_nonmatch <- length(sort(setdiff(unique(get_true_nonmatch$species), unique(get_false_match$species))))
+```
+
+```{r}
+fill_confusion_matrix <- function(heatmap, tas_sample_names, v4_in_database) {
+  get_true_match <- (heatmap %>% filter(name %in% tas_sample_names & value==3) %>% filter(species %in% v4_in_database))
+  get_missed_match <- (heatmap %>% filter(name %in% tas_sample_names & value==1) %>% filter(species %in% v4_in_database))
+  get_false_match <- (heatmap %>% filter(name %in% tas_sample_names & value==3) %>% filter(species %notin% v4_in_database))
+  get_true_nonmatch <- (heatmap %>% filter(name %in% tas_sample_names & value==1) %>% filter(species %notin% v4_in_database))
+  
+  true_match <- length(unique(get_true_match$species))
+  false_match <- length(unique(get_false_match$species))
+  
+  # if any row of missed matches has a true match, that species is TM
+  # if the whole row is only missed matches, then the species is a MM
+  missed_match <- length(setdiff(unique(get_missed_match$species), unique(get_true_match$species)))
+  
+  # if any row of true-nonmatches has a false match, that species is FM
+  # if the whole row is only true-nonmatches, then the species is a TNM
+  true_nonmatch <- length(sort(setdiff(unique(get_true_nonmatch$species), unique(get_false_match$species))))
+  
+  actual_match <- true_match + missed_match
+  actual_nonmatch <- false_match + true_nonmatch
+  predicted_match <- true_match + false_match
+  predicted_nonmatch <- missed_match + true_nonmatch
+  
+  recall <- true_match / actual_match
+  precision <- true_match / predicted_match
+  f <- (2*recall*precision) / (recall + precision)
+  accuracy <- (true_match + true_nonmatch) / (true_match + false_match + missed_match + true_nonmatch)
+  falsepositive_rate <- false_match / actual_nonmatch
+  
+  results <- data.frame(measure=c("tm", "fm", "mm", "tnm", "recall", "precision", "f", "accuracy", "fpr", "am", "anm", "pm", "pnm"), value=c(true_match, false_match, missed_match, true_nonmatch, recall, precision, f, accuracy, falsepositive_rate, actual_match, actual_nonmatch, predicted_match, predicted_nonmatch))
+
+  return(results)
+}
+
+```
+
+
+
+
+```{r}
+gg_confusion_matrix <- fill_confusion_matrix(long_gg_heatmap, v4_tas_sample_names, v4_in_gg)
+
+gg_confusion_matrix
+```
+
+```{r}
+silva_confusion_matrix <- fill_confusion_matrix(long_silva_heatmap, v4_tas_sample_names, v4_in_silva)
+
+silva_confusion_matrix
+```
+
+```{r}
+ncbi_confusion_matrix <- fill_confusion_matrix(long_ncbi_heatmap, v4_tas_sample_names, v4_in_ncbi)
+
+ncbi_confusion_matrix
+```
+
+```{r}
+gg_confusion_matrix$db <- "Greengenes"
+silva_confusion_matrix$db <- "Silva"
+ncbi_confusion_matrix$db <- "NCBI 16S"
+
+total_confusion <- rbind(gg_confusion_matrix, silva_confusion_matrix, ncbi_confusion_matrix)
+total_confusion
+```
+
+
+
+```{r}
+wider_total_confusion <- pivot_wider(total_confusion, names_from = measure, values_from = value)
+wider_total_confusion
+```
+
+
+
+
+```{r, fig.width=8, echo=FALSE}
+s1 <- wider_total_confusion %>% select(db, tm, mm)
+s2 <- pivot_longer(s1, cols=c(tm, mm))
+s2
+```
+
+
+
+
+```{r, fig.width=8, echo=FALSE}
+s1 <- wider_total_confusion %>% select(db, tm, mm)
+s2 <- pivot_longer(s1, cols=c(tm, mm))
+s2
+
+ggplot(s2, aes(x=db, y=value, fill=factor(name, levels=c("mm","tm")))) +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4],wes_palette("Zissou1")[5]),labels=c("Predicted matches", "16S V4 amplicon"), name="Identification" ) +
+    scale_y_continuous(breaks=seq(0,50,2)) +
+  #geom_text(data=for_labels, aes(x=database, y=wgs, label=enns), inherit.aes=FALSE, position=position_dodge(width=0.9), vjust=-.5) +
+  labs(title="Total number of species successfully identified for each set of predicted matches", subtitle="For classification schemes that use the NCBI 16S, Silva and Greengenes\ndatabases, V4 16S identifier, and BLCA\nTotal number of species = 49", x="Database", y="Number of species in predicted species set", fill="Identification method")
+```
+
+
+
+
+
+```{r, fig.height=10, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+pplot <- ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme( axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(x="Database in classification scheme", y="")
+
+aplot <- ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(),   legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(y="")
+
+rplot <- ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme(plot.title = element_text(size=14), axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), breaks=c(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="Recall, precision, and accuracy when assigning\ntaxonomy with the V4 16S rRNA identifier", x="Database in classification scheme", y="")
+
+wrap_plots( rplot, pplot, aplot, nrow = 3, widths = c(1), heights = c(1,1,1)) + 
+  plot_layout(guides = 'collect')
+
+```
+
+
+
+
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[3],"gray60", "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+```
+
+
+```{r, fig.height=10, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+pplot <- ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme( axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(x="Database in classification scheme", y="")
+
+aplot <- ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(),   legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(y="")
+
+rplot <- ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme(plot.title = element_text(size=14), axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), breaks=c(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="Recall, precision, and accuracy when assigning\ntaxonomy with the V4 16S rRNA identifier", x="Database in classification scheme", y="")
+
+wrap_plots( rplot, pplot, aplot, nrow = 3, widths = c(1), heights = c(1,1,1)) + 
+  plot_layout(guides = 'collect')
+
+```
+
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", wes_palette("Darjeeling1")[3], "gray60"), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+```
+
+```{r, fig.height=10, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+pplot <- ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme( axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(x="Database in classification scheme", y="")
+
+aplot <- ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.title.x = element_blank(),   legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(y="")
+
+rplot <- ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(plot.title = element_text(size=14), axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), breaks=c(), legend.position = "none",axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="Recall, precision, and accuracy when assigning\ntaxonomy with the V4 16S rRNA identifier", x="Database in classification scheme", y="")
+
+wrap_plots( rplot, pplot, aplot, nrow = 3, widths = c(1), heights = c(1,1,1)) + 
+  plot_layout(guides = 'collect')
+
+```
+
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+s3 <- wider_total_confusion %>% select(db, precision, accuracy, recall)
+s4 <- pivot_longer(s3, cols=c(precision, accuracy, recall))
+
+ggplot(s4 %>% filter(name=="precision"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="accuracy"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+ggplot(s4 %>% filter(name=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c("gray60", "gray60", wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.title.x = element_blank(), legend.position = "none", axis.text = element_text(size=14), strip.text.x = element_text(size = 18)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="", x="Database in classification scheme", y="")
+
+```
+
+
+```{r, fig.width=7, fig.height=4, echo=FALSE}
+s4 <- wider_total_confusion %>% select(db, fpr)
+s5 <- pivot_longer(s4, cols=c(fpr))
+
+ggplot(s5, aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~name) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=-.8, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[2],wes_palette("Darjeeling1")[3],wes_palette("Darjeeling1")[5]), name="Confidence score") +
+  theme(axis.text.x = element_text(angle = 30, hjust=1), breaks=c(), legend.position = "none") +
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  labs(title="False positive rate for each classification scheme and\nseveral confidence scores", subtitle="For three confidence score values when assigning taxonomy with\nthe V4 16S rRNA identifier", x="Database in classification scheme", y="")
+
+```
+
+# with confidence scores
+
+## setup
+
+I didn't use a function to calc the confidence scores in the original graph, which was really dumb. Do it now.
+
+There's thousands of species in this list, so get these down to just the sp in KTW
+
+```{r}
+# the in vitro
+ktw_v4_silva_blca <- read.csv("../../taxonomy/processed_files/formatted_v4_ktw_outfiles_2020-04-06_1556/formatted_ktw_v4_silva_2020-4-1_2020-04-06_1556.csv", stringsAsFactors = FALSE)
+
+ktw_v4_gg_blca <- read.csv("../../taxonomy/processed_files/formatted_v4_ktw_outfiles_2020-04-06_1556/formatted_ktw_v4_gg_2020-4-1_2020-04-06_1556.csv", stringsAsFactors = FALSE)
+
+ktw_v4_ncbi16_blca <- read.csv("../../taxonomy/processed_files/formatted_v4_ktw_outfiles_2020-04-06_1556/formatted_ktw_v4_ncbi16_2020-4-1_2020-04-06_1556.csv", stringsAsFactors = FALSE)
+
+```
+
+The point:
+
+ * take the blca results
+ * filter the results by confidence score
+ * filter those results so only the KTW species remain - left with a smaller list of names, but there's multiples of the ktw species
+ * return unique list of ktw species
+
+
+```{r}
+  ktw_species_set <- c("Actinotignum schaalii", "Actinomyces naeslundii", "Actinomyces neuii", "Actinomyces odontolyticus", "Actinomyces turicensis", "Actinomyces urogenitalis", "Aerococcus christensenii", "Aerococcus sanguinicola", "Aerococcus urinae", "Alloscardovia omnicolens", "Anaerococcus octavius", "Bacillus idriensis", "Bacillus infantis", "Bifidobacterium bifidum", "Bifidobacterium breve", "Bifidobacterium longum", "Brevibacterium ravenspurgense", "Campylobacter ureolyticus", "Corynebacterium amycolatum", "Corynebacterium aurimucosum", "Corynebacterium coyleae", "Corynebacterium matruchotii", "Corynebacterium pyruviciproducens", "Corynebacterium riegelii", "Corynebacterium tuscaniense", "Dermabacter hominis", "Enterobacter asburiae", "Enterobacter cloacae", "Enterococcus faecalis", "Escherichia coli", "Facklamia hominis", "Facklamia ignava", "Gardnerella vaginalis", "Globicatella sanguinis", "Gordonia terrae", "Klebsiella pneumoniae", "Kocuria rhizophila", "Kytococcus schroeteri", "Lactobacillus crispatus", "Lactobacillus delbrueckii", "Lactobacillus fermentum", "Lactobacillus gasseri", "Lactobacillus iners", "Lactobacillus jensenii", "Lactobacillus johnsonii", "Lactobacillus pontis", "Lactobacillus rhamnosus", "Micrococcus luteus", "Moraxella osloensis", "Morganella morganii", "Neisseria macacae", "Neisseria perflava", "Neisseria subflava", "Oligella urethralis", "Propionibacterium acnes", "Propionibacterium avidum", "Proteus mirabilis", "Pseudomonas aeruginosa", "Rothia dentocariosa", "Rothia mucilaginosa", "Staphylococcus epidermidis", "Staphylococcus hominis", "Staphylococcus pettenkoferi", "Staphylococcus saprophyticus", "Staphylococcus simulans", "Staphylococcus warneri", "Streptococcus agalactiae", "Streptococcus anginosus", "Streptococcus equinus", "Streptococcus gordonii", "Streptococcus mitis", "Streptococcus oralis", "Streptococcus parasanguinis", "Streptococcus salivarius", "Streptococcus sanguinis", "Trueperella bernardiae", "Varibaculum cambriense", "Veillonella parvula")
+
+species_at_conf <- function(df, threshold) {
+  #df=ktw_v4_silva_blca
+  #threshold=50
+  ktw_species_set <- c("Actinotignum schaalii", "Actinomyces naeslundii", "Actinomyces neuii", "Actinomyces odontolyticus", "Actinomyces turicensis", "Actinomyces urogenitalis", "Aerococcus christensenii", "Aerococcus sanguinicola", "Aerococcus urinae", "Alloscardovia omnicolens", "Anaerococcus octavius", "Bacillus idriensis", "Bacillus infantis", "Bifidobacterium bifidum", "Bifidobacterium breve", "Bifidobacterium longum", "Brevibacterium ravenspurgense", "Campylobacter ureolyticus", "Corynebacterium amycolatum", "Corynebacterium aurimucosum", "Corynebacterium coyleae", "Corynebacterium matruchotii", "Corynebacterium pyruviciproducens", "Corynebacterium riegelii", "Corynebacterium tuscaniense", "Dermabacter hominis", "Enterobacter asburiae", "Enterobacter cloacae", "Enterococcus faecalis", "Escherichia coli", "Facklamia hominis", "Facklamia ignava", "Gardnerella vaginalis", "Globicatella sanguinis", "Gordonia terrae", "Klebsiella pneumoniae", "Kocuria rhizophila", "Kytococcus schroeteri", "Lactobacillus crispatus", "Lactobacillus delbrueckii", "Lactobacillus fermentum", "Lactobacillus gasseri", "Lactobacillus iners", "Lactobacillus jensenii", "Lactobacillus johnsonii", "Lactobacillus pontis", "Lactobacillus rhamnosus", "Micrococcus luteus", "Moraxella osloensis", "Morganella morganii", "Neisseria macacae", "Neisseria perflava", "Neisseria subflava", "Oligella urethralis", "Propionibacterium acnes", "Propionibacterium avidum", "Proteus mirabilis", "Pseudomonas aeruginosa", "Rothia dentocariosa", "Rothia mucilaginosa", "Staphylococcus epidermidis", "Staphylococcus hominis", "Staphylococcus pettenkoferi", "Staphylococcus saprophyticus", "Staphylococcus simulans", "Staphylococcus warneri", "Streptococcus agalactiae", "Streptococcus anginosus", "Streptococcus equinus", "Streptococcus gordonii", "Streptococcus mitis", "Streptococcus oralis", "Streptococcus parasanguinis", "Streptococcus salivarius", "Streptococcus sanguinis", "Trueperella bernardiae", "Varibaculum cambriense", "Veillonella parvula")
+  
+  # get the results above the threshold
+  get_names_at_conf <- df %>% filter(rank=="species" & confidence >= threshold) %>% select(taxon, confidence)
+  
+  # dense lapply way of splitting the species names to get rid of the extra "ATCC=J124" things
+  # and create a column of just genus:species names
+  # paste(split the string, return the first element + " " + split the string, return the second element)
+  get_names_at_conf$shorter_names <- paste0(lapply(strsplit(get_names_at_conf$taxon, " "), "[", 1), " ", lapply(strsplit(get_names_at_conf$taxon, " "), "[", 2))
+  
+  # filter those results against the ktw list
+  filter_by_ktw <- get_names_at_conf %>% filter(shorter_names %in% ktw_species_set)
+  
+  # condense to unique names, return list
+  species_above_conf <- unique(filter_by_ktw$shorter_names)
+  return(species_above_conf)
+}
+```
+
+
+```{r}
+ktw_v4_silva_blca_0conf <- species_at_conf(ktw_v4_silva_blca, 0)
+
+long_silva_heatmap_0conf <- long_silva_heatmap %>% filter(species %in% ktw_v4_silva_blca_0conf)
+
+silva_confusion_matrix_0 <- fill_confusion_matrix(long_silva_heatmap_0conf, v4_tas_sample_names, v4_in_silva)
+
+silva_confusion_matrix_0
+```
+
+and compare
+
+```{r}
+test_silva <- fill_confusion_matrix(long_silva_heatmap, v4_tas_sample_names, v4_in_silva)
+test_gg <- fill_confusion_matrix(long_gg_heatmap, v4_tas_sample_names, v4_in_gg)
+test_ncbi <- fill_confusion_matrix(long_ncbi_heatmap, v4_tas_sample_names, v4_in_ncbi)
+
+test_silva
+test_gg
+test_ncbi
+```
+
+these are off, because I'm removing the species from the dataframe when I should be changing the 'value' from 3 to 2, or 2 to 1. Depending
+
+
+```{r}
+unique(long_silva_heatmap_0conf$species)
+```
+
+
+```{r}
+unique(long_silva_heatmap$species) == ktw_species_set
+```
+
+
+I have to pull apart the long heatmaps by value, and then change the 'value' column to reflect that those species aren't in the V4 seq results anymore. Those that were '3' (identified by WGS and V4 TAS) are now '2'. Those that were '2' (identified by V4 TAS) are now '1'.
+
+ALWAYS WRITE A GODDAM FUNCTION!
+
+```{r}
+reconstruct_df_for_conf <- function(df, conf_results) {
+  zeros <- df %>% filter(value==0)
+  ones <- df %>% filter(value==1)
+  twos <- df %>% filter(value==2)
+  threes <- df %>% filter(value==3)
+  
+  # if the species have been removed because they're below the conf. threshold, then the final score of that cell in the matrix is x-2. 
+  # All 2 values are now 0, because the value of that cell was calculated by adding the hit from V4 sequencing plus not hit from WGS
+  # all 3 values are now 1, because because the value of that cell was calculated by adding the not hit from V4 sequencing plus a hit from WGS
+  reduce_twos <- ifelse((twos$species %notin% conf_results), 0, 2)
+  reduce_threes <- ifelse((threes$species %notin% conf_results), 1, 3)
+  
+  # this forces 'value' into a factor because the col was initially a 'dbl'
+  new_twos <- data.frame(species=twos$species, name=twos$name, database=twos$database, value=reduce_twos)
+  new_threes <- data.frame(species=threes$species, name=threes$name, database=threes$database, value=reduce_threes)
+  
+  new_df <- rbind(zeros, ones, new_twos, new_threes)
+  
+  return(new_df)
+}
+```
+
+
+
+## do all results
+
+### silva
+
+```{r}
+ktw_v4_silva_blca_0conf_list <- species_at_conf(ktw_v4_silva_blca, 0)
+ktw_v4_silva_blca_50conf_list <- species_at_conf(ktw_v4_silva_blca, 50)
+ktw_v4_silva_blca_80conf_list <- species_at_conf(ktw_v4_silva_blca, 80)
+
+ktw_v4_silva_blca_0conf  <- reconstruct_df_for_conf(long_silva_heatmap , ktw_v4_silva_blca_0conf_list)
+ktw_v4_silva_blca_50conf  <- reconstruct_df_for_conf(long_silva_heatmap , ktw_v4_silva_blca_50conf_list)
+ktw_v4_silva_blca_80conf  <- reconstruct_df_for_conf(long_silva_heatmap , ktw_v4_silva_blca_80conf_list)
+
+silva_confusion_matrix_0 <- fill_confusion_matrix(ktw_v4_silva_blca_0conf, v4_tas_sample_names, v4_in_silva)
+silva_confusion_matrix_50 <- fill_confusion_matrix(ktw_v4_silva_blca_50conf, v4_tas_sample_names, v4_in_silva)
+silva_confusion_matrix_80 <- fill_confusion_matrix(ktw_v4_silva_blca_80conf, v4_tas_sample_names, v4_in_silva)
+
+silva_confusion_matrix_0$db <- "Silva"
+silva_confusion_matrix_0$confidence <- "All scores"
+
+silva_confusion_matrix_50$db <- "Silva"
+silva_confusion_matrix_50$confidence <- "50%"
+
+silva_confusion_matrix_80$db <- "Silva"
+silva_confusion_matrix_80$confidence <- "80%"
+
+all_silva_confusion_matrix <- rbind(silva_confusion_matrix_0, silva_confusion_matrix_50, silva_confusion_matrix_80)
+```
+
+
+aaarrgh
+```{r}
+just_species <- ktw_v4_silva_blca %>% filter(rank=="species" & confidence >= 50) %>% select(taxon, confidence)
+just_species$shorter_names <- paste0(lapply(strsplit(just_species$taxon, " "), "[", 1), " ", lapply(strsplit(just_species$taxon, " "), "[", 2))
+just_species_filter_by_ktw <- just_species %>% filter(shorter_names %in% ktw_species_set)
+check_just_species <- unique(just_species_filter_by_ktw$shorter_names)
+
+  zeros <- long_silva_heatmap %>% filter(value==0)
+  ones <- long_silva_heatmap %>% filter(value==1)
+  twos <- long_silva_heatmap %>% filter(value==2)
+  threes <- long_silva_heatmap %>% filter(value==3)
+
+twos$value
+
+  
+# if the species have been removed because they're below the conf. threshold, then the final score of that cell in the matrix is x-2. 
+# All 2 values are now 0, because the value of that cell was calculated by adding the hit from V4 sequencing plus not hit from WGS
+# all 3 values are now 1, because because the value of that cell was calculated by adding the not hit from V4 sequencing plus a hit from WGS
+reduce_twos <- ifelse((twos$species %notin% check_just_species), 0, 2)
+reduce_threes <- ifelse((threes$species %notin% check_just_species), 1, 3)
+
+new_twos <- data.frame(species=twos$species, name=twos$name, database=twos$database, value=reduce_twos)
+#new_threes <- data.frame(species=threes$species, name=threes$name, database=threes$database, value=reduce_threes)
+
+reduce_twos
+new_twos
+```
+
+
+```{r, fig.width=8, fig.height=4}
+ggplot(all_silva_confusion_matrix %>% filter(measure=="accuracy" | measure=="precision" | measure=="recall"), aes(x=confidence, y=value, fill=confidence)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~measure) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[1], wes_palette("Darjeeling1")[2], wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="summary metrics for silva", x="Database in classification scheme", y="")
+```
+
+### ncbi
+
+```{r}
+ktw_v4_ncbi16_blca_0conf_list <- species_at_conf(ktw_v4_ncbi16_blca, 0)
+ktw_v4_ncbi16_blca_50conf_list <- species_at_conf(ktw_v4_ncbi16_blca, 50)
+ktw_v4_ncbi16_blca_80conf_list <- species_at_conf(ktw_v4_ncbi16_blca, 80)
+
+ktw_v4_ncbi16_blca_0conf  <- reconstruct_df_for_conf(long_ncbi_heatmap , ktw_v4_ncbi16_blca_0conf_list)
+ktw_v4_ncbi16_blca_50conf  <- reconstruct_df_for_conf(long_ncbi_heatmap , ktw_v4_ncbi16_blca_50conf_list)
+ktw_v4_ncbi16_blca_80conf  <- reconstruct_df_for_conf(long_ncbi_heatmap , ktw_v4_ncbi16_blca_80conf_list)
+
+ncbi16_confusion_matrix_0 <- fill_confusion_matrix(ktw_v4_ncbi16_blca_0conf, v4_tas_sample_names, v4_in_ncbi)
+ncbi16_confusion_matrix_50 <- fill_confusion_matrix(ktw_v4_ncbi16_blca_50conf, v4_tas_sample_names, v4_in_ncbi)
+ncbi16_confusion_matrix_80 <- fill_confusion_matrix(ktw_v4_ncbi16_blca_80conf, v4_tas_sample_names, v4_in_ncbi)
+
+ncbi16_confusion_matrix_0$db <- "NCBI 16S"
+ncbi16_confusion_matrix_0$confidence <- "All scores"
+
+ncbi16_confusion_matrix_50$db <- "NCBI 16S"
+ncbi16_confusion_matrix_50$confidence <- "50%"
+
+ncbi16_confusion_matrix_80$db <- "NCBI 16S"
+ncbi16_confusion_matrix_80$confidence <- "80%"
+
+all_ncbi16_confusion_matrix <- rbind(ncbi16_confusion_matrix_0, ncbi16_confusion_matrix_50, ncbi16_confusion_matrix_80)
+```
+
+
+```{r, fig.width=8, fig.height=4}
+ggplot(all_ncbi16_confusion_matrix %>% filter(measure=="accuracy" | measure=="precision" | measure=="recall"), aes(x=confidence, y=value, fill=confidence)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~measure) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[1], wes_palette("Darjeeling1")[2], wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="summary metrics for ncbi", x="Database in classification scheme", y="")
+```
+
+### stupid greengenes
+
+have to adjust the function to accomodate the way greengenes writes its taxons
+
+```{r}
+species_at_conf_greengenes <- function(df, threshold) {
+  #df=ktw_v4_gg_blca
+  #threshold=0
+  ktw_species_set <- c("Actinotignum schaalii", "Actinomyces naeslundii", "Actinomyces neuii", "Actinomyces odontolyticus", "Actinomyces turicensis", "Actinomyces urogenitalis", "Aerococcus christensenii", "Aerococcus sanguinicola", "Aerococcus urinae", "Alloscardovia omnicolens", "Anaerococcus octavius", "Bacillus idriensis", "Bacillus infantis", "Bifidobacterium bifidum", "Bifidobacterium breve", "Bifidobacterium longum", "Brevibacterium ravenspurgense", "Campylobacter ureolyticus", "Corynebacterium amycolatum", "Corynebacterium aurimucosum", "Corynebacterium coyleae", "Corynebacterium matruchotii", "Corynebacterium pyruviciproducens", "Corynebacterium riegelii", "Corynebacterium tuscaniense", "Dermabacter hominis", "Enterobacter asburiae", "Enterobacter cloacae", "Enterococcus faecalis", "Escherichia coli", "Facklamia hominis", "Facklamia ignava", "Gardnerella vaginalis", "Globicatella sanguinis", "Gordonia terrae", "Klebsiella pneumoniae", "Kocuria rhizophila", "Kytococcus schroeteri", "Lactobacillus crispatus", "Lactobacillus delbrueckii", "Lactobacillus fermentum", "Lactobacillus gasseri", "Lactobacillus iners", "Lactobacillus jensenii", "Lactobacillus johnsonii", "Lactobacillus pontis", "Lactobacillus rhamnosus", "Micrococcus luteus", "Moraxella osloensis", "Morganella morganii", "Neisseria macacae", "Neisseria perflava", "Neisseria subflava", "Oligella urethralis", "Propionibacterium acnes", "Propionibacterium avidum", "Proteus mirabilis", "Pseudomonas aeruginosa", "Rothia dentocariosa", "Rothia mucilaginosa", "Staphylococcus epidermidis", "Staphylococcus hominis", "Staphylococcus pettenkoferi", "Staphylococcus saprophyticus", "Staphylococcus simulans", "Staphylococcus warneri", "Streptococcus agalactiae", "Streptococcus anginosus", "Streptococcus equinus", "Streptococcus gordonii", "Streptococcus mitis", "Streptococcus oralis", "Streptococcus parasanguinis", "Streptococcus salivarius", "Streptococcus sanguinis", "Trueperella bernardiae", "Varibaculum cambriense", "Veillonella parvula")
+  
+  # get the results above the threshold
+  get_names_at_conf <- df %>% filter((rank=="species" | rank=="genus") & confidence >= threshold)
+  get_names_at_conf
+  
+  # group by id number, then collapse into one column with two names paseted together
+  shorter_names <- get_names_at_conf %>% group_by(id) %>% summarise(taxon = paste(taxon, collapse = " ")) %>% select(taxon)
+  
+    # filter those results against the ktw list
+  filter_by_ktw <- shorter_names %>% filter(taxon %in% ktw_species_set)
+  
+    # condense to unique names, return list
+  unique(filter_by_ktw)
+  return(filter_by_ktw$taxon)
+}
+
+
+ktw_v4_gg_blca_0conf_list <- species_at_conf_greengenes(ktw_v4_gg_blca, 0)
+ktw_v4_gg_blca_50conf_list <- species_at_conf_greengenes(ktw_v4_gg_blca, 50)
+ktw_v4_gg_blca_80conf_list <- species_at_conf_greengenes(ktw_v4_gg_blca, 80)
+
+
+ktw_v4_gg_blca_0conf  <- reconstruct_df_for_conf(long_gg_heatmap , ktw_v4_gg_blca_0conf_list)
+ktw_v4_gg_blca_50conf  <- reconstruct_df_for_conf(long_gg_heatmap , ktw_v4_gg_blca_50conf_list)
+ktw_v4_gg_blca_80conf  <- reconstruct_df_for_conf(long_gg_heatmap , ktw_v4_gg_blca_80conf_list)
+
+gg_confusion_matrix_0 <- fill_confusion_matrix(ktw_v4_gg_blca_0conf, v4_tas_sample_names, v4_in_gg)
+gg_confusion_matrix_50 <- fill_confusion_matrix(ktw_v4_gg_blca_50conf, v4_tas_sample_names, v4_in_gg)
+gg_confusion_matrix_80 <- fill_confusion_matrix(ktw_v4_gg_blca_80conf, v4_tas_sample_names, v4_in_gg)
+
+gg_confusion_matrix_0$db <- "Greengenes"
+gg_confusion_matrix_0$confidence <- "All scores"
+
+gg_confusion_matrix_50$db <- "Greengenes"
+gg_confusion_matrix_50$confidence <- "50%"
+
+gg_confusion_matrix_80$db <- "Greengenes"
+gg_confusion_matrix_80$confidence <- "80%"
+
+all_gg_confusion_matrix <- rbind(gg_confusion_matrix_0, gg_confusion_matrix_50, gg_confusion_matrix_80)
+```
+
+
+```{r, fig.width=8, fig.height=4}
+ggplot(all_gg_confusion_matrix %>% filter(measure=="accuracy" | measure=="precision" | measure=="recall"), aes(x=confidence, y=value, fill=confidence)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~measure) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[1], wes_palette("Darjeeling1")[2], wes_palette("Darjeeling1")[3]), name="Confidence score") +
+  theme(axis.text = element_text(size=14), strip.text.x = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="summary metrics for gg", x="Database in classification scheme", y="")
+```
+
+### complete graph
+
+```{r}
+total_confidence_confusion <- rbind(all_gg_confusion_matrix, all_silva_confusion_matrix, all_ncbi16_confusion_matrix)
+total_confidence_confusion$confidence <- factor(total_confidence_confusion$confidence, levels = c("All scores", "80%", "50%"))
+```
+
+```{r, fig.width=7, fig.height=8, echo=FALSE}
+ggplot(total_confidence_confusion %>% filter(measure=="accuracy" | measure=="precision" | measure=="recall"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_grid(confidence~measure) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[2],wes_palette("Darjeeling1")[3],wes_palette("Darjeeling1")[5]), name="Confidence score") +
+  theme(axis.text.x = element_text(angle = 30, hjust=1), breaks=c(), legend.position = "none") +
+        theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title="Performance measures for each classification\nscheme and several confidence scores", subtitle="Values for accuracy, precision and recall when assigning taxonomy with\nthe V4 16S rRNA identifier", x="Database in classification scheme", y="Value")
+
+```
+
+and compare again
+
+```{r}
+test_silva <- fill_confusion_matrix(long_silva_heatmap, v4_tas_sample_names, v4_in_silva)
+test_gg <- fill_confusion_matrix(long_gg_heatmap, v4_tas_sample_names, v4_in_gg)
+test_ncbi <- fill_confusion_matrix(long_ncbi_heatmap, v4_tas_sample_names, v4_in_ncbi)
+
+test_silva %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+test_gg %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+test_ncbi %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+```
+
+```{r}
+gg_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+silva_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+ncbi16_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+```
+
+```{r}
+test_silva %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value) == silva_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+test_gg %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value) == gg_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+test_ncbi %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value) == ncbi16_confusion_matrix_0 %>% filter(measure %in% c("tm", "fm", "mm", "tnm")) %>% select(measure, value)
+```
+
+### fpr
+
+```{r, fig.width=7, fig.height=4, echo=FALSE}
+ggplot(total_confidence_confusion %>% filter(measure=="fpr"), aes(x=db, y=value, fill=db)) +
+  geom_bar(stat="identity", position="dodge") +
+  facet_wrap(~confidence) +
+  geom_text(aes(label=round(value, 2)), position=position_dodge(width=0.9), vjust=1.5, color="black") +
+  scale_fill_manual(values = c(wes_palette("Darjeeling1")[2],wes_palette("Darjeeling1")[3],wes_palette("Darjeeling1")[5]), name="Confidence score") +
+  theme(axis.text.x = element_text(angle = 30, hjust=1), breaks=c(), legend.position = "none") +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  scale_y_continuous(breaks=seq(0,.5,.1), limits = c(0,.3)) +
+  labs(title="False positive rate for each classification scheme\nand several confidence scores", subtitle="For three confidence score values when assigning taxonomy with\nthe V4 16S rRNA identifier", x="Database in classification scheme", y="Value")
+
+```
+
+```{r}
+total_confidence_confusion %>% filter(db=="Silva" & (measure %in% c("tm", "fm", "mm", "tnm")))
+
+```
+
+```{r, fig.width=9, fig.height=6, echo=FALSE}
+
+ggplot(total_confidence_confusion %>% filter(measure %in% c("tm", "mm")), aes(x=factor(confidence, c("All scores", "50%", "80%")), y=value, fill=measure)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4],wes_palette("Zissou1")[5],wes_palette("Zissou1")[1]),labels=c("Predicted matches", "16S V4 amplicon"), name="Identification" ) +
+    scale_y_continuous(breaks=seq(0,48,4), limits=c(0,50)) +
+  facet_wrap(~db) +
+  theme(plot.title = element_text(size=18), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust=1)) +
+  labs(title="Number of true matches and missed matches\nfor each classification scheme based on confidence score", subtitle="For classification schemes that use the NCBI 16S, Silva and Greengenes\ndatabases, V4 16S identifier, and BLCA\nTotal number of species in V4 validation set = 49", x="Confidence score", y="Number of true matches or missed matches", fill="Identification method")
+```
+
+```{r, fig.width=9, fig.height=6, echo=FALSE}
+
+ggplot(total_confidence_confusion %>% filter(measure %in% c("tm", "fm")), aes(x=factor(confidence, c("All scores", "50%", "80%")), y=value, fill=measure)) +
+  geom_bar(position="stack", stat="identity") +
+  scale_fill_manual(values = c(wes_palette("Zissou1")[2],wes_palette("Zissou1")[4],wes_palette("Zissou1")[5],wes_palette("Zissou1")[1]),labels=c("Predicted matches", "16S V4 amplicon"), name="Identification" ) +
+    scale_y_continuous(breaks=seq(0,48,4), limits=c(0,50)) +
+  facet_wrap(~db) +
+  theme(plot.title = element_text(size=18), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust=1)) +
+  labs(title="Number of true matches and missed matches\nfor each classification scheme based on confidence score", subtitle="For classification schemes that use the NCBI 16S, Silva and Greengenes\ndatabases, V4 16S identifier, and BLCA\nTotal number of species in V4 validation set = 49", x="Confidence score", y="Number of true matches or missed matches", fill="Identification method")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

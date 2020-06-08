@@ -1,0 +1,1600 @@
+---
+title: "current taxonomy results"
+author: "Carter Hoffman"
+date: "_last edited `r Sys.Date()`_"
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  html_document:
+      toc: true
+      toc_depth: 4
+      toc_float: true
+      theme: readable
+      highlight: tango
+
+---
+```{r, eval=FALSE, echo=FALSE}
+    pdf_document:
+        toc: true
+        toc_depth: 2
+        df_print: kable
+        
+    html_document:
+      toc: true
+      toc_depth: 2
+      toc_float: true
+      theme: readable
+      highlight: tango
+```
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+library(wesanderson)
+library(broom)
+library(viridis)
+library(ggrepel)
+library(RColorBrewer)
+library(patchwork)
+library(ggrepel)
+library(lubridate)
+```
+
+
+# R functions
+
+I moved the functions that were here to thier own file. Use it from now on instead of copypasta in a bunch of files.
+
+```{r}
+all_species_16s_evaluation <- readRDS("../processed_files/all_species_16s_evaluation_2020-06-03-16-28.rds")
+
+all_species_16s_evaluation$region <- factor(all_species_16s_evaluation$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+
+# and the pe
+# this file doesn't have the plain ncbi genomic db
+all_species_pe_evaluation <- readRDS("../processed_files/all_species_pe_evaluation_2020-06-03-16-29.rds")
+all_species_pe_evaluation$region <- factor(all_species_pe_evaluation$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"))
+
+# and the dumbed down for gg
+gg_special <- readRDS("../processed_files/dumber_all_species_16s_evaluation_2020-06-03-16-38.rds")
+```
+
+
+
+# new graphs
+
+```{r, fig.height=5, fig.width=8, echo=FALSE}
+
+b16w70 <- read.csv("../../taxonomy/resource_files/bladder_w70.csv", header=FALSE, sep="\t")
+colnames(b16w70) <- c("Pos", "w_entropy")
+
+rank_pos <- c(1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8)
+
+adj <- 35
+ggplot(b16w70) +
+  geom_rect(xmin=162-adj, xmax=237-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=302-adj, xmax=459-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=661-adj, xmax= 734-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=825-adj, xmax= 956-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=1108-adj, xmax=1191-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=1299-adj, xmax=1370-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=1445-adj, xmax=1503-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=1582-adj, xmax=1642-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=1824-adj, xmax=1880-adj, ymin=0, ymax=Inf, fill="ivory3") +
+  geom_line(aes(x=Pos, y=w_entropy), size=1.1, color=wes_palette("Moonrise2")[4], alpha=.8) +
+  annotate("text", x = 165, y = .95, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 350, y = .95, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 665, y = .95, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 860, y = .95, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 1120, y = .95, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1300, y = .95, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1440, y = .95, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1580, y = .95, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1820, y = .95, label = "V9", color="gray40", size=5) +
+  #bv
+  geom_segment(aes(x = 240, y = rank_pos[2], xend = 734, yend = rank_pos[2]), color = "black", size=2) +
+  geom_text(aes(label="16S_BV2f-16S_BV3r", x=1000, y=rank_pos[2]), size=4) +
+  #gras
+  geom_segment(aes(x = 562, y = rank_pos[5], xend = 1072, yend = rank_pos[5]), color = "black", size=2) +
+  geom_text(aes(label="V3F-V4R", x=1200, y=rank_pos[5]), size=4) +
+  #v3
+  geom_segment(aes(x = 579, y = rank_pos[3], xend = 779, yend = rank_pos[3]), color = wes_palette("GrandBudapest2")[4], size=2) +
+  geom_text(aes(label="v3_579F-v3_779R", x=1020, y=rank_pos[3]), size=4) +
+  #cap
+  geom_segment(aes(x = 755, y = rank_pos[4], xend = 1091, yend = rank_pos[4]), color = "black", size=2) +
+  geom_text(aes(label="F515-R806", x=1250, y=rank_pos[4]), size=4) +
+  #k17
+  geom_segment(aes(x = 46, y = rank_pos[1], xend = 778, yend = rank_pos[1]), color = "black", size=2) +
+  geom_text(aes(label="A17F-515R", x=900, y=rank_pos[1]), size=4) +
+  #b646
+  geom_segment(aes(x = 564, y = rank_pos[6], xend = 1090, yend = rank_pos[6]), color = "black", size=2) +
+  geom_text(aes(label="MiCSQ_343FL-MiCSQ_806R", x=1400, y=rank_pos[6]), size=4) +
+  #k515
+  geom_segment(aes(x = 780, y = rank_pos[7], xend = 1443, yend = rank_pos[7]), color = "black", size=2) +
+  geom_text(aes(label="515F-1114R", x=1600, y=rank_pos[7]), size=4) +
+  #v6
+  geom_segment(aes(x = 1183, y = rank_pos[8], xend = 1410, yend = rank_pos[8]), color = wes_palette("GrandBudapest2")[4], size=2) +
+  geom_text(aes(label="v6_1183F-v6_1410R", x=1650, y=rank_pos[8]), size=4) +
+  
+  scale_x_continuous(breaks=seq(0,1800,100))+ 
+    xlim(-10,1900) +
+    theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  theme(axis.ticks.y = element_blank(), axis.text.y=element_blank()) +
+  labs(title="Location of 16S rRNA gene sequence primers", x="Position in 16S gene sequence MSA", y="  Entropy                      Targeted amplicons")
+```
+
+## tm vs confidence
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  #scale_color_viridis(discrete = TRUE, option = "C", begin = .9, end=0) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+    scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="78 total records compared from query dataset", y="number of True Matches", x="confidence value")
+```
+
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation, aes(y=fmeasure, x=recall)) +
+  geom_line(aes(color=region), size=1.3)+
+  #scale_color_viridis(discrete = TRUE, option = "C", begin = .9, end=0) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+    scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="F vs recall", subtitle="78 total records compared from query dataset", y="fmeasure", x="recall")
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(region=="V6"), aes(y=fmeasure, x=recall)) +
+  geom_line(aes(color=region), size=1.3)+
+  #scale_color_viridis(discrete = TRUE, option = "C", begin = .9, end=0) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+    scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="F vs recall", subtitle="78 total records compared from query dataset", y="fmeasure", x="recall")
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation, aes(x=confidence, y=recall)) +
+  geom_line(aes(color=region), size=1.3)+
+  #scale_color_viridis(discrete = TRUE, option = "C", begin = .9, end=0) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+    scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="recall vs confidence", subtitle="78 total records compared from query dataset", x="confidence", y="recall")
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation, aes(x=confidence, y=fmeasure)) +
+  geom_line(aes(color=region), size=1.3)+
+  #scale_color_viridis(discrete = TRUE, option = "C", begin = .9, end=0) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+    scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="fmeasure vs confidence", subtitle="78 total records compared from query dataset", x="confidence", y="fmeasure")
+```
+
+
+
+
+## weights of F
+
+```{r, fig.height=5, fig.width=8, echo=FALSE}
+ggplot(all_species_16s_evaluation) +
+  geom_line(aes(weight, fmeasure, color=region), size=1) +
+  facet_grid(classifier~database) +
+  #scale_x_continuous(limits = c(0,1), breaks = seq(0,1,.2)) +
+  #scale_y_continuous(limits = c(0,1), breaks = seq(0,1,.2)) +
+  labs(title="Performance of all classification schemes", subtitle="16S databases", x="Weight", y="F-measure")
+```
+
+```{r, fig.height=5, fig.width=8, echo=FALSE}
+ggplot(all_species_16s_evaluation) +
+  geom_line(aes(weight, fmeasure,color=region), size=1) +
+  #geom_point(aes(weight, fmeasure,color=region), size=2) +
+  facet_grid(classifier~database) +
+  scale_x_continuous(limits = c(.35,.65), breaks = seq(0,1,.1)) +
+  scale_y_continuous(limits = c(.55,1), breaks = seq(0,1,.1))+
+  labs(title="Performance of all classification schemes", subtitle="Graphs centered on peak performance\nGreengenes+Naive Bayes not shown", x="Weight", y="F-measure")
+```
+
+```{r, fig.height=4, fig.width=8, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter( database=="NCBI 16S" & (weight>=.45 & weight <.525)), aes(x=weight, y=fmeasure)) +
+  geom_line(aes(weight, fmeasure,color=region), size=1) +
+  geom_vline(data=all_species_16s_evaluation %>% filter(classifier=="BLCA"), aes(xintercept = 0.4794521	))+
+  geom_vline(data=all_species_16s_evaluation %>% filter(classifier=="Naive Bayes"), aes(xintercept = 0.4797297))+
+  facet_wrap(~classifier)+
+  scale_y_continuous(breaks = seq(0,1,.05)) +
+  labs(title="Opimal performance using the NCBI 16S database", subtitle="Vertical line is optimal weight for V1-v3\nGraphs centered on peak performance", x="Weight", y="F-measure")
+```
+
+```{r, fig.height=7, fig.width=8, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(weight>.4 & weight <.6) %>% filter(database=="NCBI 16S")) +
+  geom_line(aes(weight, fmeasure, color=classifier), size=1) +
+  facet_wrap(~region) +
+  #scale_xcontinuous(limits = c(0,1), breaks = seq(0,1,.2)) +
+  #scale_y_continuous(limits = c(0,1), breaks = seq(0,1,.2)) +
+  labs(title="Performance of NCBI 16S database with classifiers", subtitle="BLCA outperforms in most classification schemes\nGraphs show weight range of peak perfomance", x="Weight", y="F-measure")
+```
+
+## f1 vs recall
+
+### functions
+
+```{r}
+# I don't care if this is a hack
+
+max_perform <- function(the_classifier, the_database, variable_region) {
+  v4s <- all_species_16s_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  maxf_v4s <- v4s[which.max(v4s$fmeasure),]
+  return(maxf_v4s)
+}
+
+pick_conf <- function(the_classifier, the_database, variable_region, conf_value) {
+  v4s <- all_species_16s_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  conf_v4s <- v4s[v4s$confidence==conf_value,]
+  return(conf_v4s)
+}
+
+
+fill_out_max <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- max_perform(c,d,r)
+      fill_out_max <- rbind(fill_out_max, x)
+    }
+  }
+}
+
+fill_all_conf <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- pick_conf(c,d,r, .000)
+      fill_all_conf <- rbind(fill_all_conf, x)
+    }
+  }
+}
+
+fill_out_max$region <- factor(fill_out_max$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+#fill_out_max$region <- factor(fill_out_max$region, levels = c("V6","V4-V6","V4","V3-V5","V3-V4","V3","V2-V3","V1-V3"))
+fill_all_conf$region <- factor(fill_all_conf$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+
+```
+
+### all confidence scores
+
+So this is sucky, but I spent a lot of thought on what is a missed match. I accounted for those species that were absent from the database, because an absent species just means a false match. A species that should have been caught and is present in the database is a missed match. So all these graphs that use x=true_match/78 is wrong, and I have to use the recall calculated in the function, because I use values of F based on those values of recall.
+
+Greengenes will look much better.
+
+##### 5/8
+
+I'm adding a graph where the confidence scores are ignored.
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(fill_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall when ignoring confidence scores", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 78", x="Recall", y="F value")
+```
+
+##### ncbi 16
+
+```{r, echo=FALSE}
+#top_15 <- fill_all_conf  %>% filter(database=="NCBI 16S") %>% select(region, classifier, recall, fmeasure) %>% arrange(desc(recall))
+#knitr::kable(top_15[1:16,], digits=3)
+```
+
+##### silva
+
+```{r, echo=FALSE}
+#top_15 <- fill_all_conf  %>% filter(database=="Silva") %>% select(region, classifier, recall, fmeasure) %>% arrange(desc(recall))
+#knitr::kable(top_15[1:16,], digits=3)
+```
+
+
+
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot() +
+  geom_rect(data=fill_out_max, aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(data=fill_all_conf, aes(x=recall, y=fmeasure), size=3,color="gray50") +
+  geom_point(data=fill_out_max, aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(data=fill_out_max, aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="All classification schemes using part of 16S gene as identifier\nGray points are results when ignoring confidence scores\nTotal species = 78", x="Recall", y="max F value")
+```
+
+
+
+
+
+
+
+##### ncbi 16
+
+```{r, echo=FALSE}
+#top_15 <- fill_out_max  %>% filter(database=="NCBI 16S") %>% select(region, classifier, recall, fmeasure) %>% arrange(desc(recall))
+
+#knitr::kable(top_15[1:16,], digits=3)
+```
+
+
+##### silva
+
+```{r, echo=FALSE}
+#top_15 <- fill_out_max  %>% filter(database=="Silva") %>% select(region, classifier, recall, fmeasure) %>% arrange(desc(recall))
+#knitr::kable(top_15[1:16,], digits=3)
+```
+
+
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(fill_out_max) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=confidence, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  #geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Confidence score at best performance", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 78", x="confidence", y="max F value")
+```
+
+### make it dumb for gg
+
+```{r}
+gg_max_perform <- function(the_classifier, the_database, variable_region) {
+  v4s <- gg_special %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  maxf_v4s <- v4s[which.max(v4s$fmeasure),]
+  return(maxf_v4s)
+}
+
+gg_pick_conf <- function(the_classifier, the_database, variable_region, conf_value) {
+  v4s <- gg_special %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  conf_v4s <- v4s[v4s$confidence==conf_value,]
+  return(conf_v4s)
+}
+
+
+gg_fill_out_max <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- gg_max_perform(c,d,r)
+      gg_fill_out_max <- rbind(gg_fill_out_max, x)
+    }
+  }
+}
+
+gg_fill_all_conf <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- gg_pick_conf(c,d,r, .000)
+      gg_fill_all_conf <- rbind(gg_fill_all_conf, x)
+    }
+  }
+}
+
+gg_fill_out_max$region <- factor(gg_fill_out_max$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+#fill_out_max$region <- factor(fill_out_max$region, levels = c("V6","V4-V6","V4","V3-V5","V3-V4","V3","V2-V3","V1-V3"))
+gg_fill_all_conf$region <- factor(gg_fill_all_conf$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+
+
+```
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(gg_fill_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall when ignoring confidence scores,\nadjusted for Greengenes", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 33", x="Recall", y="F value")
+```
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(gg_fill_out_max) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at maximum performance, adjusted for Greengenes", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 33", x="Recall", y="F value")
+```
+
+
+### defaults
+
+Now try with the default 80\% confidence value.
+
+```{r, echo=FALSE}
+# I don't care if this is a hack
+
+bad_conf <- function(the_classifier, the_database, variable_region) {
+  v4s <- all_species_16s_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  #maxf_v4s <- v4s[which.max(v4s$fmeasure),]
+  conf_v4s <- v4s[v4s$confidence==.8,]
+  #doublet <- rbind(maxf_v4s, conf_v4s)
+  #doublet <- maxf_v4s
+  doublet <- conf_v4s
+  return(doublet)
+}
+
+meh_conf <- function(the_classifier, the_database, variable_region) {
+  v4s <- all_species_16s_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  #maxf_v4s <- v4s[which.max(v4s$fmeasure),]
+  conf_v4s <- v4s[v4s$confidence==.5,]
+  #doublet <- rbind(maxf_v4s, conf_v4s)
+  #doublet <- maxf_v4s
+  doublet <- conf_v4s
+  return(doublet)
+}
+
+
+filling_80 <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- bad_conf(c,d,r)
+      filling_80 <- rbind(filling_80, x)
+    }
+  }
+}
+
+filling_80$region <- factor(filling_80$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+
+filling_50 <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+classfrs <- c("BLCA", "Naive Bayes")
+dbses <- c("Silva", "NCBI 16S", "Greengenes")
+for (c in classfrs) {
+  for (d in dbses) {
+    for (r in regions) {
+      x <- meh_conf(c,d,r)
+      filling_50 <- rbind(filling_50, x)
+    }
+  }
+}
+
+filling_50$region <- factor(filling_50$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+#filling_80$region <- factor(filling_80$region, levels = c("V6","V4-V6","V4","V3-V5","V3-V4","V3","V2-V3","V1-V3"))
+
+#filling_80
+```
+
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot() +
+  geom_rect(data=filling_80, aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(data=fill_out_max, aes(x=recall, y=fmeasure), size=3, color="gray60") +
+    geom_point(data=filling_80, aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(data=filling_80, aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at confidence score of 80%",  subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 78\nGray dots are results from max performance", x="Recall", y="F value calculated at 80% confidence score")
+```
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot() +
+  geom_rect(data=filling_50, aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+    geom_point(data=fill_out_max, aes(x=recall, y=fmeasure), size=3, color="gray60") +
+  geom_point(data=filling_50,aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(data=filling_50,aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at confidence score of 50%",  subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 78\nGray dots are results from max performance", x="Recall", y="F value calculated at 50% confidence score")
+```
+
+### tm max f1 and 80\%
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+get_max <- fill_out_max %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_max$set <- "Max F1"
+get_80 <- filling_80 %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_80$set <- "80% Conf."
+
+tm_bars <- rbind(get_80, get_max)
+
+ggplot(tm_bars %>% filter(classifier=="BLCA"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region) +
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance and 80% confidence score", subtitle="BLCA classifier\ntotal species = 78", x="setting", y="percent of True Matches")
+
+ggplot(tm_bars %>% filter(classifier=="Naive Bayes"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region)+
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance and 80% confidence score", x="setting", subtitle="Naive Bayes classifier\ntotal species = 78", y="percent of True Matches")
+```
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+get_max <- fill_out_max %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_max$set <- "Max F-measure"
+get_80 <- filling_80 %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_80$set <- "80% Conf."
+get_50 <- filling_50 %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_50$set <- "50% Conf."
+
+tm_bars <- rbind(get_50, get_80, get_max)
+
+ggplot(tm_bars %>% filter(classifier=="BLCA"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region) +
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance, 80% and 50% confidence score", subtitle="BLCA classifier\ntotal species = 78", x="setting", y="percent of True Matches")
+
+ggplot(tm_bars %>% filter(classifier=="Naive Bayes"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region)+
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance, 80% and 50% confidence score", x="setting", subtitle="Naive Bayes classifier\ntotal species = 78", y="percent of True Matches")
+```
+
+```{r, fig.width=10, fig.height=4, echo=FALSE}
+ggplot(tm_bars %>% filter(classifier=="BLCA"), aes(x=region, y=true_match, fill=factor(set, levels=c("Max F-measure", "50% Conf.", "80% Conf.")))) +
+  geom_col(position="dodge") +
+  scale_fill_manual(values = c(wes_palette("IsleofDogs1")[2], wes_palette("IsleofDogs1")[1],wes_palette("IsleofDogs1")[3])) +
+  ylim(0,80) +
+  scale_x_discrete(labels=c("V4-V6" = "V4-V6")) +
+  #theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=.5), axis.text = element_text(size=12)) +
+  facet_wrap(~database)+
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches between max performance,\n80% and 50% confidence score", subtitle="BLCA classifier\ntotal species = 78", x="Variable region", y="True Matches", fill="Confidence score")
+
+
+ggplot(tm_bars %>% filter(classifier=="Naive Bayes"), aes(x=region, y=true_match, fill=factor(set, levels=c("Max F-measure", "50% Conf.", "80% Conf.")))) +
+  geom_col(position="dodge") +
+  scale_fill_manual(values = c(wes_palette("IsleofDogs1")[2], wes_palette("IsleofDogs1")[1],wes_palette("IsleofDogs1")[3])) +
+  ylim(0,80) +
+  scale_x_discrete(labels=c("V4-V6" = "V4-V6")) +
+  #theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=.5), axis.text = element_text(size=12)) +
+  facet_wrap(~database)+
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches between max performance,\n80% and 50% confidence score", subtitle="Naive Bayes classifier\ntotal species = 78", x="Variable region", y="True Matches", fill="Confidence score")
+
+
+```
+
+
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+get_max <- fill_out_max %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_max$set <- "Max F1"
+get_50 <- filling_50 %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_50$set <- "50% Conf."
+
+tm_bars <- rbind(get_50, get_max)
+
+ggplot(tm_bars %>% filter(classifier=="BLCA"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region) +
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance and 50% confidence score", subtitle="BLCA classifier\ntotal species = 78", x="setting", y="percent of True Matches")
+
+ggplot(tm_bars %>% filter(classifier=="Naive Bayes"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region)+
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches\nbetween max performance and 50% confidence score", x="setting", subtitle="Naive Bayes classifier\ntotal species = 78", y="percent of True Matches")
+```
+
+The updates have changed the outcome of the evaluation, and you can compare the new with the old by looking at masters_writing/section_drafts_d2/eval_d3.html. It doesn't change the final outcome. V1-V3 + BLCA + NCBI16 is still the best scheme overall, but Silva is definietly hammered on harder under the new evaluation.
+
+```{r}
+#fill_out_max
+```
+
+```{r, fig.width=10, fig.height=6, echo=FALSE}
+
+ ggplot(fill_out_max) +
+  #geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=fmeasure, y=confidence,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  scale_color_brewer(palette = "Paired")+
+    facet_grid(classifier~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+        theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  theme_bw() +
+  labs(title="Confidence score required for best performance of classification scheme",  subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 78", x="F value", y="optimal confidence score")
+```
+
+## how to pick an optimal threshold
+
+The most common classification scheme for identifying bacteria uses the Silva database, the V4 region, and Naive Bayes. How can the optimal confidence score be determined? Start with the F-vs-weight graph.
+
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4")) +
+  geom_line(aes(weight, fmeasure), size=1) +
+  geom_vline(xintercept = 0.5428571, color="red"	)+
+  geom_vline(xintercept = .56, color="orange"	)+
+  labs(title="Determining the optimal confidence score", subtitle="Silva, V4, Naive Bayes", x="Weight", y="F-measure")
+```
+
+```{r}
+get_max %>% filter(region=="V4") %>% arrange(desc(fmeasure))
+```
+
+```{r, fig.width=11, fig.height=6, echo=FALSE}
+plot_fconf <- ggplot(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4")) +
+  geom_line(aes(confidence, fmeasure), size=1) +
+  geom_vline(xintercept = 0.053, color="red"	)+
+  geom_vline(xintercept = 0.8, color="gray60"	)+
+    geom_vline(xintercept = 0.5, color="gray60"	)+
+  scale_x_continuous(breaks=seq(0,1,.1), limits = c(0,1)) +
+        theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="F-measure vs confidence score", subtitle="Classification scheme composed of the Silva database,\nV4 16S identifier, and Naive Bayes classifier", x="Confidence", y="F-measure")
+
+
+tm_bars3 <- rbind(get_max, get_50, get_80)
+
+plot_tm <- ggplot(tm_bars3 %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4"), aes(x=set, y=true_match/78, fill=set)) +
+  geom_col() +
+  facet_grid(database~region)+
+  ylim(0,1)+
+    theme(legend.position="none") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+        theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="Difference in number of True Matches between\nmax performance and default confidence scores", x="setting", subtitle="Classification scheme composed of the Silva database,\nV4 16S identifier, and Naive Bayes classifier\ntotal species = 78", y="Recall")
+
+
+plot_fconf + plot_tm
+```
+
+
+It's not obvious where the peak F-measure value is, because this classification scheme looks more like Mt. St. Helens than Mt. Hood. The confidence score of the highest peformance value is 0.204, shown by the red line.
+
+
+
+```{r}
+(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & region=="V4" & database=="Silva") %>% arrange(desc(fmeasure)) %>% select(fmeasure, weight, true_match, false_match, confidence))[1:20,]
+```
+
+```{r, echo=FALSE, eval=FALSE}
+all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & region=="V4" & database=="Silva") %>% filter(false_match < 8) %>% arrange(desc(true_match)) %>% select(fmeasure, weight, true_match, false_match, precision, confidence) %>% unique()
+```
+
+
+
+```{r, fig.height=9, fig.width=10, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4")) +
+  geom_line(aes(confidence, fmeasure), size=1) +
+  geom_line(aes(confidence, true_match/78), size=1, color='green') +
+  geom_line(aes(confidence, false_match/78), size=1, color='blue') +
+  geom_line(aes(confidence, weight), size=1, color='orange') +
+  geom_vline(xintercept = 0.204, color="red"	)+
+      #scale_x_continuous(limits = c(.3,1), breaks = seq(0,1,.1)) +
+  labs(title="Determining the optimal confidence score", subtitle="F-measure vs confidence", x="confidence", y="F-measure")
+```
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4")) +
+  geom_line(aes(confidence, fmeasure), size=1) +
+  geom_vline(xintercept = 0.3761468, color="red"	)+
+  geom_vline(xintercept = 0.4712644, color="orange"	)+
+      #scale_x_continuous(limits = c(.3,1), breaks = seq(0,1,.1)) +
+  labs(title="Determining the optimal confidence score", subtitle="F-measure vs weight", x="confidence", y="F-measure")
+```
+
+
+However, that wide plateu suggests that you could pick a different weight value and still retain an acceptable performance from the classification scheme. Instead of the maximum performance, you could choose a value where there are far more True Matches than False Matches. This would be selecting in favor of precision over recall. The second orange line indicates the weight where the classification scheme returns the most True Matches where the number of False Matches less than half the number of True Matches.
+
+Now use the weight to find the confidence value on a confidence-vs-weight graph. A more practical method is to just look it up in the dataframe, but this has more visual punch.
+
+```{r, fig.height=4, fig.width=5, echo=FALSE}
+ggplot(all_species_16s_evaluation %>% filter(classifier=="Naive Bayes" & database=="Silva" & region=="V4"), aes(y=weight, x=confidence)) +
+  geom_line(size=1) +
+  geom_segment(aes(y=0.4712644, x=.205, yend=0, xend=.205), color="orange") +
+  geom_segment(aes(y=0.4712644, x=.205, yend=0.4712644, xend=0), color="orange") +
+  geom_point(aes(y=0.4712644, x=.205), color="orange") +
+  
+  geom_segment(aes(y=0.3761468, x=.053, yend=0, xend=.053), color="red") +
+  geom_segment(aes(y=0.3761468, x=.053, yend=0.3761468, xend=0), color="red") +
+  geom_point(aes(y=0.3761468, x=.053), color="red") +
+  #geom_hline(yintercept = 0.3761468, color="red")+
+  #geom_hline(yintercept = 0.4712644, color="orange")+
+    scale_x_continuous(limits = c(0,1), breaks = seq(0,1,.1)) +
+  labs(title="Determining the optimal confidence score", subtitle="Weight vs confidence score", y="Weight", x="Confidence")
+```
+
+
+
+With a weight of 0.376, the confidence score to get the optimum performance from this classification scheme is 5.3\%. If I couldnt' see that the F-measure values weren't decreasing as you move to the left of this point, I probably wouldn't bother setting a confidence threshold at all.
+
+On the other hand, using a weight of .471 corresponds to a confidence score of 20.5\%. At this threshold, the classification scheme returns 9 fewer True Matches than at the optimal setting, but still represents an acceptable level of performance. Choosing between classification schemes that favor either precision or recall is a classic tradeoff of evaluation, and remains up to the user to determine which is best for the experiment.
+
+This demonstrates a good reason to include a mock community in a sequencing run. These steps can be done to find the optimum performance of the classification scheme of the mock community, which can then be applied to the unknown sequence data.
+
+# the kind of False Matches
+
+I was wondering how many of the False Matches are of the "unavailable" kind. As in when the classifier picks some record out of the database, how many of the False Matches are due to the record's lack of taxonomic information. When I checked the databases for the presence of all the KTW species, Silva and NCBI had a complete set. GG did not. But I noticed that some of the matches that BLCA or NB call are like "uncultured bacterium".  `validate_match_batch` looks for those kinds of entries and writes "unavailable" to the output file, so pull out those results.
+
+```{r}
+show_false_matches <- function(dataframe, db, vr, clsfr) {
+  get_empty_taxon <- table(dataframe %>% filter(match==0) %>% select(blca))
+
+  #print(empty_taxon)
+  
+  # replace 'region' names with more informative ones
+  if (vr=="v3") {
+    variable_region <- "V3"
+  } else if (vr=="v6") {
+    variable_region <- "V6"
+  } else if (vr=="k17") {
+    variable_region <- "V1-V3"
+  } else if (vr=="bbv") {
+    variable_region <- "V2-V3"
+  } else if (vr=="cap") {
+    variable_region <- "V4" 
+  } else if (vr=="k515") {
+    variable_region <- "V4-V6"
+  } else if (vr=="b646") {
+    variable_region <- "V3-V5"
+  } else if (vr=="ffh") {
+    variable_region <- "Ffh V1-V2"
+  } else if (vr=="rpob") {
+    variable_region <- "RpoB V1"
+  } else {
+    variable_region <- "V3-V4"
+  }
+  
+  # replace database
+  if (db=="gg") {
+    the_db <- "Greengenes"
+  } else if (db=="silva") {
+    the_db <- "Silva"
+  } else if (db=="ncbi16") {
+    the_db <- "NCBI 16S"
+  } else if (db=="genomic") {
+    the_db <- "NCBI Genomic"
+  } else {
+    the_db <- "Custom Genomic"
+  }
+  
+  # replace classifier
+  if (clsfr=="blca") {
+    the_clsfr <- "BLCA"
+  } else {
+    the_clsfr <- "Naive Bayes"
+  }
+  
+  empty_taxon <- data.frame(get_empty_taxon)
+  empty_taxon$db <- the_db
+  empty_taxon$region <- variable_region
+  empty_taxon$classifier <- the_clsfr
+  colnames(empty_taxon) <- c("falsematch", "count",  "database", "region", "classifier")
+  
+  return(empty_taxon)
+}
+
+
+
+total_falsematches <- function(each_result) {
+  each_name <- names(each_result)
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    #print(sprintf("sending to show_false_matches: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- show_false_matches(each_result[x][[1]], the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+```
+
+```{r, eval=FALSE}
+#show_false_matches(all_res_db$blca_b646_gg, "gg", "b646", "blca")
+falsematch_breakdown <- total_falsematches(all_res_db)
+#falsematch_breakdown
+```
+
+```{r}
+# save them
+#saveRDS(falsematch_breakdown, "../processed_files/falsematch_breakdown_2020-05-26.rds")
+falsematch_breakdown <- readRDS("../processed_files/falsematch_breakdown_2020-05-26.rds")
+
+falsematch_breakdown$region <- factor(falsematch_breakdown$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+```
+
+```{r, fig.height=5, fig.width=7}
+ggplot(falsematch_breakdown %>% filter(falsematch=="unavailable"), aes(x=region, y=count)) +
+  geom_col()+
+  ylim(0,80) +
+  facet_grid(classifier~database) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust = 1) ) +
+  labs(title="Number of False Matches due to ambiguous taxons", subtitle="NCBI 16S had no ambiguous False Matches", x="variable region", y="number of entries")
+```
+
+GG has a lot. Silva has a lot when using BLCA, but very few when using NB. NCBI has zero "unavailable" matches. Geez. How to explain this?
+
+Here's what I think is happening. There are a lot more "uncultured bacterium" entries for Lactobacillus than the singular _Lactobacillus delbrueckii_ species in the silva db.
+
+```
+buzz@costco-special-k0Mput3r:~/ktw_in_db$ grep -wFc "Lactobacillus;uncultured bacterium" SILVA_132_SSURef_Nr99_tax_silva.fasta
+1499
+buzz@costco-special-k0Mput3r:~/ktw_in_db$ grep -wFc "Lactobacillus delbrueckii" SILVA_132_SSURef_Nr99_tax_silva.fasta
+109
+```
+
+I think there's a lot more diversity in that fake taxon than the species-named taxons. So when BLCA is searching the database using one of the variable regions, it's catching a lot of those fake taxons in addition to the type strain. Maybe these are exactly the same as the type strain. But when those ties are broken by random chance, it happens to overwhelmingly pick the fake taxon because there's more of them. Like if BLCA has to break a tie between 9 fake taxons and one type strain, the fake taxon gets picked 90% of the time. When I retrained Silva to use with NB, I think the "uncultured bacterium" was treated like it's own taxon. NB is catching less diverse, higher frequency values of the 8mers in the named taxons than the fake taxon. But it's still interesting that the schemes yeild comparable results.
+
+I think the absence of "unavailable" matches in the NCBI database is because of the curation. They didn't allow any ambiguous sequences into the database, so there's no ambiguous results. Just the ones that are clearly wrong.
+
+
+# protein encoding gene headache
+
+The sequence data for the protein encoding gene sequences are the 149 isolates that KTW sequenced. There's 70 _more_ records than the 16S type strain dataset, with a lot of duplicates. Naturally, this is going to affect the performance evaluation. If Ffh and Rpob gets 4 cracks at classifying _E. coli_ while the 16S gene gets one, that's a biased evaluation. The table below shows which species are duplicated, and is from the file `resources/wellcome_to_species.csv` that I've been using to map the sample number to the species name.
+
+| name | duplicates | sample names | Ffh | RpoB | keep?
+|-----------------|-------|--------------|--------|-----------|----|
+| Actinobaculum schaalii |2 | 16933_8_4, 16933_8_38 | i |i |16933_8_38|
+| Actinomyces naeslundii |3 | 17957_1_82, 17957_1_88, 21837_8_63 |17957_1_82 out of cluster |within .006, 17957_1_82 out of cluster |17957_1_88|
+| Actinomyces neuii |4 | 16933_8_7, 16933_8_44, 17957_1_58, 21837_8_32 | 17957_1_58, 21837_8_32 out of cluster|17957_1_58, 21837_8_32 out of cluster |16933_8_44|
+| Aerococcus urinae |5 | 17957_1_50, 17957_1_59, 17957_1_73, 21837_8_31, 21837_8_75 | within .062, 21837_8_31 out of cluster| 17957_1_73, 21837_8_31, 21837_8_75 in another cluster|17957_1_50|
+| Alloscardovia omnicolens |2 | 17957_1_65, 21837_8_85 | within .11 |i |n|
+| Corynebacterium amycolatum |2 | 16933_8_12, 17957_1_49 |within .005 | within .007|17957_1_49|
+| Corynebacterium species |2 | 21837_8_21, 21837_8_35 | within .14|x |n|
+| Enterobacter cloacae |2 | 21837_8_45, 21837_8_61 |i | i|21837_8_45|
+| Enterococcus faecalis |3 | 16933_8_32, 21837_8_39, 21837_8_70 |16933_8_32 out of cluster | within .006|21837_8_39|
+| Escherichia coli |4 | 16933_8_19, 16933_8_24, 16933_8_30, 21837_8_55 | i |within .006 |16933_8_19|
+| Gardnerella vaginalis |22 | 16933_8_2, 16933_8_5, 16933_8_33, 16933_8_37, 16933_8_40, 16933_8_50, 16933_8_52, 16933_8_57, 16933_8_60, 21837_8_17, 21837_8_19, 21837_8_26, 21837_8_34, 21837_8_42, 21837_8_49, 21837_8_65, 21837_8_66, 21837_8_73, 21837_8_74, 21837_8_82, 21837_8_90, 21837_8_96 | ?| ?|21837_8_26|
+| Lactobacillus crispatus |6 | 16933_8_9, 16933_8_41, 16933_8_53, 17957_1_41, 21837_8_80, 21837_8_86 |within .01 | i|16933_8_41|
+| Lactobacillus gasseri |6 | 16933_8_13, 16933_8_18, 16933_8_46, 21837_8_50, 21837_8_59, 21837_8_94 |16933_8_46 out of cluster |within .024, 16933_8_46 out of cluster |21837_8_59|
+| Lactobacillus iners |2 | 21837_8_15, 21837_8_56 |i |within .018 |21837_8_56|
+| Lactobacillus jensenii |3 | 16933_8_49, 17957_1_81, 21837_8_22 |21837_8_22 out of cluster | 21837_8_22 out of cluster|16933_8_49|
+| Micrococcus luteus |3 | 16933_8_10, 16933_8_16, 21837_8_46 | within .01| within .006|21837_8_46|
+| Staphylococcus warneri |2 | 21837_8_14, 21837_8_38 |within .02 | x|n|
+| Streptococcus agalactiae |4 | 17957_1_61, 21837_8_16, 21837_8_67, 21837_8_79 | i|i |21837_8_16|
+| Streptococcus anginosus |7 | 16933_8_11, 16933_8_34, 16933_8_58, 17957_1_12, 17957_1_43, 17957_1_57, 17957_1_74 | i|i |17957_1_12|
+| Streptococcus mitis |5 | 16933_8_21, 21837_8_23, 21837_8_24, 21837_8_64, 21837_8_83 |x |x |n|
+| Streptococcus salivarius |2 | 21837_8_43, 21837_8_78 | within .068|within .006 |n|
+
+My idea is that I can look at the MSAs that I did for RpoB and Ffh. If the 4 sequences of _E. coli_ are the same, I can just pick a sample name and use that as the representative. I don't know what to do with the with the 22 sequences of _G. vaginalis_, that makes me worry.
+
+I don't know if that's such a good idea. All three _A. naeslundii_ sequences are different from each other, and I don't want to be comparing the rest of those sequences by eye. Need to think on this some more.
+
+## choosing samples
+
+##### 3/8
+
+I took another approach. At first I thought using the guide tree that t-coffee made during alignment would be a good way, but while reading the manual I found out the guide tree is not a phylogenetic tree. I want to have a method that shows how close the sequences are to each other, so I can't use the guide tree. So I made neighbor-joining trees in Ugene from the MSA of the Ffh and Rpob amplicons. I used the `/handle_newick/raw_data/cog85_3124_3274_5_4/COG0085_3124_3274.aln` and `/handle_newick/raw_data/cog541_812_995_5_4/COG0541_812_995.aln` files to make the Newick trees.
+
+Then I looked for clusters. If the different samples are clustered close enough, then I can say those sequences are similar enough to pick one as the representative sequence. _E. coli_ was easy, the distances of each of the 4 samples from each other are zero. So was _A. schaalii_. I had more trouble with _G. vaginalis_. 
+
+For those samples whose sequences were a distance of zero, I labled them as 'i', as in identical. For those samples whose sequences were some distance from each other I noted the branch length that separates the leaves. So for _M. luteus_, all the sequences were within .01 of each other, at most (rpob was a smaller distance). For those sequences that were split into two or more clusters, I put an 'x'. So for species like _C. species_ that only had two sequences, that meant I couldn't decide which of the two sequences to use as a representative because they were split apart and clustered in different groups, and I gave them an 'x'. Those samples that had two or more clusters in which there were two or more sequences, I came back to later. Like _G. vaginalis_.
+
+I disqualified anything with an 'x'. After looking at the size of the distance values, I decided that anything over .03 would be disqualified. In the remaining species, I picked a sample at random, and that's the one I'm going to use for the evaluation with 16S. For _G. vaginalis_ and _A. urinae_, I picked a cluster with the most shared samples between Ffh and Rpob, and then picked one of those at random.
+
+This leaves me with 6 species rejected from comparing between the protein encoding and the 16S amplicons, two of which are absent from the custom database. So, I'm going to take out these species from both the protien encoding and the 16S amplicon results before doing the evaluation.
+
+ * Alloscardovia omnicolens
+ * Corynebacterium species
+ * Staphylococcus warneri
+ * Streptococcus mitis
+ * Bacillus idriensis
+ * Streptococcus salivarius
+
+It's under the 8 species cutoff, so I call this a win.
+
+## whitelist
+
+moved to central_evaluation.rmd
+
+
+## try for real
+
+### fixed 
+
+##### 3/10
+
+found it. Using the wrong map file in `validate_match_batch`. Garbage in, garbage out, that kind of thing.
+
+```
+(base) C:\Users\Carter\Documents\thesis\thesis_git\taxonomy\src_files>python validate_match_batch.py -i ../processed_files/formatted_custom_db_outfiles_2020-01-25_1625/protien_encoding/renamed -m ../../resources/wellcome_to_species_2019-4-30.csv
+writing to ../processed_files/validated_outfiles_2020-03-10_26/validated_formatted_ffh_customdb_renamed_2020_2020-03-10_26.csv
+        the result name 'Streptococcus thermophilus' was found to be a synonym linked to the current name 'Streptococcus salivarius'
+        comparing the mapped name 'Streptococcus salivarius' to the current name 'Streptococcus salivarius'
+        and found to be the same, writing [21837_8_78,Streptococcus salivarius,Streptococcus salivarius,100.0,1] to file
+
+writing to ../processed_files/validated_outfiles_2020-03-10_26/validated_formatted_rpob_customdb_renamed_2020_2020-03-10_26.csv
+```
+
+renamed the folder to `validated_pe_custom_outfiles_2020-03-10_26`. Just copying the code blocks above, which is probably a bad idea to recycle all those names, but trying it anyway.
+
+(moved)
+
+```{r}
+#custom_db <- readRDS("../processed_files/custom_db_results_2020-3-14.rds")
+
+# this file doesn't have the plain ncbi genomic db
+#custom_db <- readRDS("../processed_files/all_species_pe_evaluation_2020-06-03-15-31.rds")
+
+# supposed to have the plain genomic, but there's too much shit to deal with 
+#custom_db <- readRDS("../processed_files/custom_db_results_2020-06-02-15-14.rds")
+```
+
+```{r}
+#custom_db
+```
+
+```{r}
+bad_conf_pe <- function(the_classifier, the_database, variable_region) {
+  v4s <- all_species_pe_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  maxf_v4s <- v4s[which.max(v4s$fmeasure),]
+  #conf_v4s <- v4s[v4s$confidence==.8,]
+  #doublet <- rbind(maxf_v4s, conf_v4s)
+  doublet <- maxf_v4s
+  return(doublet)
+}
+
+all_conf_pe <- function(the_classifier, the_database, variable_region) {
+  v4s <- all_species_pe_evaluation %>% filter(classifier==the_classifier & database==the_database & region==variable_region)
+  conf_v4s <- v4s[v4s$confidence==.000,]
+  doublet <- conf_v4s
+  return(doublet)
+}
+
+fill_all_conf_pe <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1")
+dbses <- c("NCBI Genomic", "Custom Genomic")
+for (r in regions) {
+  for (d in dbses) {
+      x <- all_conf_pe("BLCA",d,r)
+      fill_all_conf_pe <- rbind(fill_all_conf_pe, x)
+  }
+}
+
+
+fill_best_pe <- data.frame()
+regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1")
+dbses <- c("NCBI Genomic", "Custom Genomic")
+for (r in regions) {
+  for (d in dbses) {
+      x <- bad_conf_pe("BLCA",d,r)
+      fill_best_pe <- rbind(fill_best_pe, x)
+  }
+}
+
+fill_best_pe$region <- factor(fill_best_pe$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"))
+
+fill_all_conf_pe$region <- factor(fill_all_conf_pe$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"))
+```
+
+```{r, fig.height=5, fig.width=7, echo=FALSE}
+ggplot(all_species_pe_evaluation, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3) +
+  #scale_color_brewer(palette = "Paired") +
+  scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+    theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="73 total records compared from query dataset", y="number of True Matches", x="confidence value")
+```
+
+```{r, fig.width=8, fig.height=5, echo=FALSE}
+ggplot(all_species_pe_evaluation %>% filter(confidence==.0), aes(x=region, y=true_match)) +
+  geom_col(position="dodge") +
+  #scale_fill_manual(values = c(wes_palette("IsleofDogs1")[2], wes_palette("IsleofDogs1")[1],wes_palette("IsleofDogs1")[3])) +
+    scale_y_continuous(breaks=seq(0,75,10), limits = c(0,75)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches between\nmax performance and ignoring confidence score", subtitle="Custom database build and BLCA classifier\ntotal species = 73", x="Variable region", y="True Matches", fill="Confidence score")
+```
+
+```{r}
+all_species_pe_evaluation %>% filter(confidence==.0)
+```
+
+```{r, fig.width=10, fig.height=5, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(fill_best_pe) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure, color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  # can't find previous data, but only need to change the legend text
+  scale_color_brewer(labels= c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+    facet_wrap(~database)+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="custom database build and standard NCBI genomic\ntotal number of species = 73", x="Recall", y="max F value")
+```
+
+```{r}
+check_v1v3 <- all_species_pe_evaluation %>% filter(classifier=="BLCA" & database=="Custom Genomic" & region=="V1-V3")
+check_v1v3[which.max(check_v1v3$fmeasure),] %>% select(recall, precision, fmeasure, true_match, false_match, region, confidence, cellC)
+
+check_ffh <- all_species_pe_evaluation %>% filter(classifier=="BLCA" & database=="Custom Genomic" & region=="Ffh V1-V2")
+check_ffh[which.max(check_ffh$fmeasure),] %>% select(recall, precision, fmeasure, true_match, false_match, region, confidence, cellC)
+
+check_rpo <- all_species_pe_evaluation %>% filter(classifier=="BLCA" & database=="Custom Genomic" & region=="RpoB V1")
+check_rpo[which.max(check_rpo$fmeasure),] %>% select(recall, precision, fmeasure, true_match, false_match, region, confidence, cellC)
+```
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(fill_best_pe %>% filter(database=="Custom Genomic")) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  # can't find previous data, but only need to change the legend text
+    scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="custom database build and standard NCBI genomic\ntotal number of species = 73", x="Recall", y="max F value")
+```
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ggplot(fill_best_pe %>% filter(database=="Custom Genomic")) +
+  geom_point(aes(x=true_match, y=false_match, color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+    scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,72,10), limits = c(0,80)) +
+  scale_x_continuous(breaks=seq(0,72,10), limits = c(0,80)) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="number of True Matches vs False Matches", subtitle="custom database build\nconfidence score that gives max F\ntotal number of species = 73", x="true_match", y="false_match")
+```
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ggplot(fill_all_conf_pe %>% filter(database=="Custom Genomic")) +
+  geom_point(aes(x=true_match, y=false_match, color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+    scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,72,10), limits = c(0,80)) +
+  scale_x_continuous(breaks=seq(0,72,10), limits = c(0,80)) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="number of True Matches vs False Matches", subtitle="custom database build\nignoring confidence score\ntotal number of species = 73", x="true_match", y="false_match")
+```
+
+```{r}
+#custom_db %>% filter(database=="Custom Genomic") %>% select(true_match, false_match, region, confidence) %>% filter(region=="RpoB V1")
+```
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(all_species_pe_evaluation, aes(x=confidence, y=fmeasure, color=region)) +
+  #geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_line(size=2) +
+  scale_color_brewer(labels= c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  #scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  #scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="custom database build and standard NCBI genomic\ntotal number of species = 73", x="confidence", y="f")
+```
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(all_species_pe_evaluation, aes(x=fmeasure, y=true_match, color=region)) +
+  #geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_line(size=1) +
+  scale_color_brewer(labels= c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  #scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  #scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="custom database build and standard NCBI genomic\ntotal number of species = 73", x="fmeasure", y="true_match")
+```
+
+That's more like it! There aren't any fundamental differences that I see from the old botched way that I was doing the evaluation. Ffh and Rpob switch between the two, that's the same. But an important difference between the databases. V1-V3 is still pretty good, but V2-V3 is practically the same. There's a large difference between the two databases when using V3-V5. V6 is still gets the booty end of the stick.
+
+Nope, I just noticed that V3 is _significantly_ better. The botched evaluation put V3 second to last above V6, and now it's in third place behind V1-V3. That's interesting.
+
+```{r, fig.width=7, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+ ggplot(fill_all_conf_pe %>% filter(database=="Custom Genomic")) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  # can't find previous data, but only need to change the legend text
+  scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall ignoring confidence", subtitle="custom database build\ntotal number of species = 73", x="Recall", y="F value")
+```
+
+
+```{r, fig.width=12, fig.height=6, echo=FALSE}
+#roc_like(use_medians, "gg", "qiime", 78)
+
+best_pe <- ggplot(fill_best_pe %>% filter(database=="Custom Genomic")) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  # can't find previous data, but only need to change the legend text
+    scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall at best performance", subtitle="custom database build\ntotal number of species = 73", x="Recall", y="max F value")
+
+
+all_pe <- ggplot(fill_all_conf_pe %>% filter(database=="Custom Genomic")) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=recall, y=fmeasure,color=region), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_manual(values = c(wes_palette("Moonrise3")[3], wes_palette("Moonrise3")[1], wes_palette("Moonrise3")[5], wes_palette("Moonrise1")[3], wes_palette("Moonrise1")[2], wes_palette("Moonrise2")[1], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[3]) ) +
+  # can't find previous data, but only need to change the legend text
+  scale_color_brewer(labels= c("16S V1-V3", "16S V2-V3", "16S V3", "16S V3-V4", "16S V3-V5", "16S V4", "16S V4-V6", "16S V6", "Ffh V1-V2", "RpoB V1"), palette = "Paired")+
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Recall when ignoring confidence scores", subtitle="custom database build\ntotal number of species = 73", x="Recall", y="F value")
+
+
+(all_pe + best_pe) + plot_layout(guides = 'collect')
+```
+
+```{r, fig.width=10, fig.height=4, echo=FALSE}
+
+get_pe_max <- fill_best_pe %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_pe_max$set <- "Max F-measure"
+get_all_conf_pe <- fill_all_conf_pe %>% select(fmeasure, confidence, classifier, region, true_match, database)
+get_all_conf_pe$set <- "All scores"
+
+tm_pe <- rbind(get_pe_max, get_all_conf_pe)
+```
+
+```{r, fig.width=8, fig.height=5, echo=FALSE}
+ggplot(tm_pe %>% filter(classifier=="BLCA"), aes(x=region, y=true_match, fill=factor(set, levels=c("Max F-measure", "All scores")))) +
+  geom_col(position="dodge") +
+  scale_fill_manual(values = c(wes_palette("IsleofDogs1")[2], wes_palette("IsleofDogs1")[1],wes_palette("IsleofDogs1")[3])) +
+    scale_y_continuous(breaks=seq(0,75,10), limits = c(0,75)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), axis.text.x = element_text(angle = 30, hjust = 1)) +
+  labs(title="Difference in number of True Matches between\nmax performance and ignoring confidence score", subtitle="Custom database build and BLCA classifier\ntotal species = 73", x="Variable region", y="True Matches", fill="Confidence score")
+```
+
+
+
+# select genera
+
+##### 5/31
+
+## prep for genus level
+
+
+```{r}
+collect_all_confidence <- function(the_df) {
+  df_all_conf <- data.frame()
+  regions <-c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6")
+  classfrs <- c("BLCA", "Naive Bayes")
+  dbses <- c("Silva", "NCBI 16S", "Greengenes")
+  for (c in classfrs) {
+    for (d in dbses) {
+      for (r in regions) {
+        by_region <- the_df %>% filter(classifier==c & database==d & region==r)
+        conf_by_region <- by_region[by_region$confidence==.01,]
+        df_all_conf <- rbind(df_all_conf, conf_by_region)
+      }
+    }
+  }
+  df_all_conf$region <- factor(df_all_conf$region, levels = c("V1-V3", "V2-V3", "V3", "V3-V4", "V3-V5", "V4", "V4-V6", "V6"))
+  return(df_all_conf)
+}
+
+```
+
+
+```{r, eval=FALSE}
+all_res_db <- c(blca_gg_results, blca_silva_results, blca_ncbi16_results, qiime_gg_results, qiime_silva_results, qiime_ncbi16_results)
+
+test <- blca_ncbi16_results$blca_b646_ncbi16 %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+actinomyces_results <- total_by_genus(all_res_db, "Actinomyces")
+
+staphylococcus_results <- total_by_genus(all_res_db, "Staphylococcus")
+
+corynebacterium_results <- total_by_genus(all_res_db, "Corynebacterium")
+
+lactobacillus_results <- total_by_genus(all_res_db, "Lactobacillus")
+
+streptococcus_results <- total_by_genus(all_res_db, "Streptococcus")
+
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(actinomyces_results, paste0("../processed_files/evaluate_by_genus/actinomyces_results_", runtime, ".rds"))
+saveRDS(staphylococcus_results, paste0("../processed_files/evaluate_by_genus/staphylococcus_results_", runtime, ".rds"))
+saveRDS(corynebacterium_results, paste0("../processed_files/evaluate_by_genus/corynebacterium_results_", runtime, ".rds"))
+saveRDS(lactobacillus_results, paste0("../processed_files/evaluate_by_genus/lactobacillus_results_", runtime, ".rds"))
+saveRDS(streptococcus_results, paste0("../processed_files/evaluate_by_genus/streptococcus_results_", runtime, ".rds"))
+
+```
+
+```{r, eval=FALSE}
+everyone_else <- c("Actinomyces", "Staphylococcus", "Corynebacterium", "Lactobacillus", "Streptococcus")
+
+others_by_genus <- function(each_result, genus_filter) {
+
+  each_name <- names(each_result)
+  
+  final_db <- data.frame()
+  for (x in each_name) {
+    the_classifier <- strsplit(x, split="_")[[1]][1]
+    the_var_region <- strsplit(x, split="_")[[1]][2]
+    the_db <- strsplit(x, split="_")[[1]][3]
+    
+    # make a new column to hold the genera
+    add_genus <- each_result[x][[1]] %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+    #message(sprintf("sending to f1: name=%s, database=%s, vr=%s, classifier=%s", x, the_db, the_var_region, the_classifier))
+    holder <- f1_records(add_genus %>% filter(query_genus %notin% genus_filter), the_db, the_var_region, the_classifier)
+    final_db <- rbind(final_db, holder)
+  }
+  return(final_db)
+}
+
+others_results <- others_by_genus(all_res_db, everyone_else)
+
+# save them
+runtime <- paste(Sys.Date(), hour(Sys.time()), minute(Sys.time()), sep='-')
+saveRDS(others_results, paste0("../processed_files/evaluate_by_genus/all_others_results_", runtime, ".rds"))
+```
+
+```{r}
+actinomyces_results <- readRDS("../processed_files/evaluate_by_genus/actinomyces_results_2020-05-31-16-17.rds")
+
+staphylococcus_results <- readRDS("../processed_files/evaluate_by_genus/staphylococcus_results_2020-05-31-16-17.rds")
+
+corynebacterium_results <- readRDS("../processed_files/evaluate_by_genus/corynebacterium_results_2020-05-31-16-17.rds")
+
+lactobacillus_results <- readRDS("../processed_files/evaluate_by_genus/lactobacillus_results_2020-05-31-16-17.rds")
+
+streptococcus_results <- readRDS("../processed_files/evaluate_by_genus/streptococcus_results_2020-05-31-16-17.rds")
+
+others_results <- readRDS("../processed_files/evaluate_by_genus/all_others_results_2020-05-31-17-4.rds")
+```
+
+```{r, fig.height=7, fig.width=6, echo=FALSE}
+list_of_df <- function(path_to_dir, prefix) {
+  # got tired of loading all the csv files individually, 
+  # so this function does it in batch. Reads all filenames 
+  # in a dir, then creates a df from the csv, then adds names 
+  # to the growing list of dataframes.
+  get_filenames <- list.files(path_to_dir, full.names = TRUE)
+  build_csv_df <- lapply(get_filenames, read.csv, stringsAsFactors=FALSE)
+
+  grow_names <- vector()
+  for (g in get_filenames) {
+    new_name <- paste(prefix, strsplit(basename(g), "_")[[1]][3], strsplit(basename(g), "_")[[1]][5], sep="_")
+    grow_names <- c(grow_names, new_name)
+  }
+  names(build_csv_df) <- grow_names
+  return(build_csv_df)
+}
+
+get_example <- list_of_df("../../taxonomy/processed_files/blca_validated_outfiles_2020-03-09_18/ncbi16/", "blca")
+test <- get_example$blca_b646_ncbi16 %>% separate(col=query, into=c("query_genus", "query_species"), sep=" ", remove=FALSE, extra="drop")
+
+ggplot(data.frame(table(test %>% select(query_genus))), aes(x=Var1, y=Freq)) +
+  geom_col() +
+  coord_flip()+
+  scale_y_continuous(breaks=seq(0,10,1), limits = c(0,10)) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="Number of species in each genera\nof the Thomas-White dataset", x="species", y="counts")
+```
+
+
+Most number of species in genera Actinomyces, Staphylococcus, Corynebacterium, Lactobacillus and Streptococcus
+
+These next graphs had a lot of data stack on top of each other, so I'm graphing by classifier and variable region.
+
+
+## lactobacillus
+
+```{r}
+lactobacillus_all_conf <- collect_all_confidence(lactobacillus_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(lactobacillus_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_y_continuous(breaks=seq(0,10,2), limits = c(0,10)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Streptococcus genus only", y="number of True Matches", x="confidence value")
+```
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(lactobacillus_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/9, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom"  ) +
+  labs(title="Performance when ignoring confidence, Lactobacillus genus only", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 9", x="Recall", y="F value")
+```
+
+## corynebacterium
+
+```{r}
+corynebacterium_all_conf <- collect_all_confidence(corynebacterium_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(corynebacterium_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_y_continuous(breaks=seq(0,10,2), limits = c(0,10)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Corynebacterium genus only", y="number of True Matches", x="confidence value")
+```
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(corynebacterium_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/7, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #geom_label_repel(aes(x=true_match/9, y=fmeasure, label=region), nudge_x= -.3, direction= "y") +
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom" ) +
+  labs(title="Performance when ignoring confidence, Corynebacterium genus only", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 7", x="Recall", y="F value")
+```
+
+## staphylococcus
+
+```{r}
+staphylococcus_all_conf <- collect_all_confidence(staphylococcus_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(staphylococcus_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_y_continuous(breaks=seq(0,10,2), limits = c(0,10)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Staphylococcus genus only", y="number of True Matches", x="confidence value")
+```
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(staphylococcus_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/6, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #geom_label_repel(aes(x=true_match/9, y=fmeasure, label=region), nudge_x= -.3, direction= "y") +
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom" ) +
+  labs(title="Performance when ignoring confidence, Staphylococcus genus only", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 6", x="Recall", y="F value")
+```
+
+## actinomyces
+
+```{r}
+actinomyces_all_conf <- collect_all_confidence(actinomyces_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(actinomyces_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_y_continuous(breaks=seq(0,10,2), limits = c(0,10)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Actinomyces genus only", y="number of True Matches", x="confidence value")
+```
+
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(actinomyces_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/5, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #geom_label_repel(aes(x=true_match/5, y=fmeasure, label=region), nudge_x= -.3, direction= "y") +
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom" ) +
+  labs(title="Performance when ignoring confidence, Actinomyces genus only", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 5", x="Recall", y="F value")
+```
+
+## Streptococcus
+
+```{r}
+streptococcus_all_conf <- collect_all_confidence(streptococcus_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(streptococcus_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+    scale_y_continuous(breaks=seq(0,10,2), limits = c(0,10)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+      theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14) ) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Streptococcus genus only", y="number of True Matches", x="confidence value")
+```
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(streptococcus_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/9, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #geom_label_repel(aes(x=true_match/9, y=fmeasure, label=region), nudge_x= -.3, direction= "y") +
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom" ) +
+  labs(title="Performance when ignoring confidence, Streptococcus genus only", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 9", x="Recall", y="F value")
+```
+
+## all others
+
+```{r}
+others_all_conf <- collect_all_confidence(others_results)
+```
+
+```{r, fig.height=6, fig.width=10, echo=FALSE}
+ggplot(others_results, aes(y=true_match, x=confidence)) +
+  geom_line(aes(color=region), size=1.3)+
+  scale_color_brewer(palette = "Paired")+
+  facet_grid(classifier~database) +
+  #theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  scale_y_continuous(breaks=seq(0,40,20), limits = c(0,40)) +
+  scale_x_continuous(breaks=seq(0,1,.2), limits = c(0,1)) +
+  theme(plot.title = element_text(size=16), plot.subtitle = element_text(size=12), axis.title.y= element_text(size=14), axis.title.x= element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), axis.text = element_text(size=12), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="Number of True Matches for increasing confidence values", subtitle="For the Streptococcus genus only", y="number of True Matches", x="confidence value")
+```
+
+
+
+```{r, fig.width=11, fig.height=5, echo=FALSE}
+ ggplot(others_all_conf) +
+  geom_rect(aes(xmin=0, xmax=1, ymin=0, ymax=1), fill=NA, size=1, color='gray60') +
+  geom_point(aes(x=true_match/40, y=fmeasure,color=database), size=3, shape = 21, fill = "white", stroke = 3) +
+  geom_point(aes(x=1, y=1), color="red", size=2)+
+  #scale_color_brewer(palette = "Paired")+
+  scale_color_manual(values = c(wes_palette("Moonrise2")[3], wes_palette("Moonrise2")[2], wes_palette("Moonrise2")[4])) +
+  facet_grid(classifier~region)+
+  scale_y_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  scale_x_continuous(breaks=seq(0,1,.5), limits = c(0,1)) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=14), axis.title.x = element_text(size=14), axis.text = element_text(size=11), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14), legend.position = "bottom"  ) +
+  labs(title="Performance when ignoring confidence, remaining genera", subtitle="All classification schemes using part of 16S gene as identifier\nTotal species = 40", x="Recall", y="F value")
+```
+
+# conclusion
+
+So I think that's done. RpoB and Ffh outperform 16S, but if you have to use 16S, primers targeting the V1-V3 work best
+
+
+
+
+
+
+
+
+
