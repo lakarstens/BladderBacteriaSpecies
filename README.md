@@ -60,4 +60,4 @@ sections.
 
 The general workflow is illustrated below
 
-![](resources/md_files/sm_overall_activity.png)
+![](../resources/md_files/sm_only16s_activity.png)
