@@ -1,0 +1,79 @@
+| Actinobaculum schaalii                | .| no hits |FJ960443 |as Actinotignum schaali|
+| Actinomyces naeslundii                | MSLA01000015 ||AB618790||
+| Actinomyces neuii                     |AGWP01000007| |AM084229 |	Actinomyces neuii subsp. anitratus|
+| Actinomyces odontolyticus             | LLVT01000005| |AB818950||
+| Actinomyces turicensis                | X78720 ||X78720||
+| Actinomyces urogenitalis              | ACFH01000038| |ACFH01000038 |	Actinomyces urogenitalis DSM 15434|
+| Aerococcus christensenii              | CP014159 ||Y17005||
+| Aerococcus sanguinicola               | CP014160 ||AJ276512||
+| Aerococcus urinae                     | LF650740 ||M77819||
+| Alloscardovia omnicolens              | AM419458 ||AM419460||
+| Anaerococcus octavius                 | HZ484960 ||Y07841||
+| Bacillus idriensis                    | LG084935 ||AY904033||
+| Bacillus infantis                     | JF411305| |AY904032||
+| Bifidobacterium bifidum               | BCXK01000011 ||S83624||
+| Bifidobacterium breve                 | AF491835 ||AB006658||
+| Bifidobacterium longum                | AB690245 ||AP010889| Bifidobacterium longum subsp. infa…|
+| Brevibacterium massiliense            | .| no hits |EU086793 	|Brevibacterium ravenspurgense|
+| Campylobacter ureolyticus             | FN401327 | 	|ARGD01000016 |	Campylobacter ureolyticus DSM 20703|
+| Corynebacterium amycolatum            | MTPT01000077| |X84244||
+| Corynebacterium aurimucosum           | LV535241| |AJ309207||
+| Corynebacterium coyleae               | FNRU01000002 ||X96497||
+| Corynebacterium matruchotii           | LV535263| |ACSH02000003 |	Corynebacterium matruchotii ATCC 1… | pintail was n/a|
+| Corynebacterium pyruviciproducens     | ATBY01000001| |ATBY01000001||
+| Corynebacterium riegelii              | CP012342| |Y14651||
+| Corynebacterium sp.                   | .| too many hits, ignoring |.|no type spec|
+| Corynebacterium tuscaniense           |  ||AY677186||
+| Dermabacter hominis                   | AY677186 ||X91034||
+| Enterobacter asburiae                 | CP011591 ||AB004744||
+| Enterobacter cloacae                  | JN969321 ||CP001918 	|Enterobacter cloacae subsp. cloaca…|
+| Enterococcus faecalis                 | KC707577| |AB012212||
+| Escherichia coli                      | CP016007| |EU014689||
+| Facklamia hominis                     | AGZD01000007 ||AGZD01000007 	|Facklamia hominis CCUG 36813|pintail n/a
+| Facklamia ignava                      | AGZE01000005 ||AGZE01000005 |	Facklamia ignava CCUG 37419
+| Gardnerella vaginalis                 | ADET01000004 ||M58744 |	Gardnerella vaginalis ATCC 14018|
+| Globicatella sanguinis                | BCQX01000190 | only one available, pintall score was n/a | 	AB680901 |	Globicatella sanguinis|
+| Gordonia terrae                       | CP016594 | |AB920570||
+| Klebsiella pneumoniae                 | JN969315 | |X87276||
+| Kocuria rhizophila                    | JWTC01000032  ||Y16264||
+| Kytococcus schroeteri                 | AJ297722 | |AJ297722||
+| Lactobacillus crispatus               | LJCZ01000024  ||AB008206||
+| Lactobacillus delbrueckii             | CP018215 | |AB007908||
+| Lactobacillus fermentum               | AVAB01000001 | |AJ575812||
+| Lactobacillus gasseri                 | MUJA01000007 | |AB008209||
+| Lactobacillus iners                   | AEKJ01000002 | |HE573916||
+| Lactobacillus jensenii                | CP018809 | |AF243176||
+| Lactobacillus johnsonii               | CP016400 | |HE573915||
+| Lactobacillus pontis                  | X76329 | |X76329||
+| Lactobacillus rhamnosus               | GU812308 | |AB008211||
+| Micrococcus luteus                    | KY777455 | |CP001628 |	Micrococcus luteus NCTC 2665|
+| Moraxella osloensis                   | FR726160 | |FR726160||
+| Morganella morganii                   | CBWE010000081 | | 	AJ301681 |	Morganella morganii subsp. morganii|
+| Neisseria macacae                     | HZ486031 | |HF558383|
+| Neisseria perflava                    | HF558366 | |HF558366|
+| Neisseria subflava                    | ACEO02000016 | |AJ239291|
+| Oligella urethralis                   | HW318359 | |AF133538|
+| Propionibacterium acnes               | CP006032 | |CP006032 |	Propionibacterium acnes hdn-1  no type spec
+| Propionibacterium avidum              | .| no hits |AGBA01000019 |	as Cutibacterium avidum ATCC 25577|
+| Proteus mirabilis                     | CP012674 | |AJ301682||
+| Pseudomonas aeruginosa                | JGZX01000016 | |HE978271||
+| Rothia dentocariosa                   | JQHE01000029 | |CP002280 |	Rothia dentocariosa ATCC 17931|
+| Rothia mucilaginosa                   | AP011540 | |X87758||
+| Staphylococcus epidermidis            | JN695885 | |AB681292||
+| Staphylococcus hominis                | LHPB01000063 | |X66101 |	Staphylococcus hominis subsp. homi… 	1|
+| Staphylococcus pettenkoferi           | AF322002 | |AF322002||
+| Staphylococcus saprophyticus          | KF476043 | |AP008934 |	Staphylococcus saprophyticus subsp… 	|
+| Staphylococcus simulans               | CP014016 | |D83373||
+| Staphylococcus warneri                | KF476044 | |L37603||
+| Streptococcus agalactiae              | CP011325 | |AB023574||
+| Streptococcus anginosus               | CP012719 | |AFIM01000033||
+| Streptococcus equinus                 | FNMW01000009 | |AB680295||
+| Streptococcus gordonii                | CP020450 | |AF003931||
+| Streptococcus mitis                   | AJ295848 | |AF003929||
+| Streptococcus oralis                  | AEPO01000017 | |ADMV01000001||
+| Streptococcus parasanguinis           | JYOW01000001 | |AF003933||
+| Streptococcus salivarius              | CP013216 | only named subspecies available |AY188352 	|Streptococcus salivarius subsp. sa… 	|
+| Streptococcus sanguinis               | JYOZ01000001 | |AF003928||
+| Trueperella bernardiae                | LGYI01000020 | only one seq available |X79224||
+| Varibaculum cambriense                | LT223689 | no sequence quality greater than 86% |AJ428402||
+| Veillonella parvula                   | KX108934 | |AB538437||
