@@ -128,7 +128,7 @@ AF104116.1.356, AEVB01000043.3380.4915, AF429764.1.1430, AF429765.1.1463
 and AJ301607.1.1433). We used the script `cull_downloads.py` to comb
 through the Silva download and write the desired type strains to a new
 file
-    `ktw_16s_type_2019-11-25_34.fna`"\`.
+    `ktw_16s_type_2019-11-25_34.fna`.
 
     (base) >python cull_downloads.py -i arb-silva.de_2019-11-10_id739827_tax_silva.fasta
     writing to ktw_16s_type_2019-11-25_34.fna
