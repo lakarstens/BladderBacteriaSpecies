@@ -156,17 +156,17 @@ variable regions onto the remaining 77 species from the Thomas-White
 dataset. The positions of the variable regions were confirmed through
 Sliding Window Analysis (see the sliding\_window folder).
 
-| variable region | *E. coli* start | *E. coli* stop |  |  |
-| --------------- | --------------- | -------------- |  |  |
-| V1              | 69              | 99             |  |  |
-| V2              | 137             | 242            |  |  |
-| V3              | 433             | 497            |  |  |
-| V4              | 576             | 682            |  |  |
-| V5              | 822             | 879            |  |  |
-| V6              | 986             | 1043           |  |  |
-| V7              | 1117            | 1173           |  |  |
-| V8              | 1243            | 1294           |  |  |
-| V9              | 1435            | 1465           |  |  |
+| variable region | *E. coli* start | *E. coli* stop |
+| --------------- | --------------- | -------------- |
+| V1              | 69              | 99             |
+| V2              | 137             | 242            |
+| V3              | 433             | 497            |
+| V4              | 576             | 682            |
+| V5              | 822             | 879            |
+| V6              | 986             | 1043           |
+| V7              | 1117            | 1173           |
+| V8              | 1243            | 1294           |
+| V9              | 1435            | 1465           |
 
 The python script `extract_16s_vr.py` is used to extract the predicted
 amplicons from the MSA based on the 5’ and 3’ annealing sites of the
