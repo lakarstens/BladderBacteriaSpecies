@@ -122,7 +122,7 @@ below.
 All these sequences were downloaded and saved in one multi-record FASTA
 file named arb-silva.de\_2019-11-10\_id739827.fasta. However, this file
 also includes several other entries of each species. For example, in
-addition to the desired type strain AB680295, *Streptococcus equinus*
+addition to the desired type strain *Streptococcus equinus* AB680295,
 Silva included an additional 6 entries in the download (AB002482.1.1457,
 AF104116.1.356, AEVB01000043.3380.4915, AF429764.1.1430, AF429765.1.1463
 and AJ301607.1.1433). We used the script `cull_downloads.py` to comb
