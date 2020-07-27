@@ -4,7 +4,9 @@
 
 
 
-# Data download
+# Extracting predicted amplicons
+
+## Data download
 
 For each species identified in the bladder by Thomas-White, the 16S rRNA
 gene sequence of the corresponding type strain was downloaded from the
@@ -14,7 +16,7 @@ phenotypic evaluations taken to define the bacterial species\[1\], and
 is the agreed bacterial organism to which the taxonomic name is
 referring.
 
-## Synonyms of species
+### Synonyms of species
 
 Species names have changed in response to advances in bacterial
 systematics. All currently known species synonyms were downloaded from
@@ -24,7 +26,7 @@ were consolidated to the species level. For example, entries like
 *Enterobacter cloacae* and *Enterobacter cloacae dissolvens* are treated
 as synonyms of *Enterobacter cloacae*.
 
-## Silva search parameters
+### Silva search parameters
 
 Sequences were searched using the “\[T\]” filter setting, and sequences
 longer than 1450nt with alignment and pintail quality scores greater
@@ -117,7 +119,7 @@ below.
 | Varibaculum cambriense                        | AJ428402              |                                            |
 | Veillonella parvula                           | AB538437              |                                            |
 
-## pare down results
+### pare down results
 
 All these sequences were downloaded and saved in one multi-record FASTA
 file named arb-silva.de\_2019-11-10\_id739827.fasta. However, this file
@@ -125,15 +127,15 @@ also includes several other entries of each species. For example, in
 addition to the desired type strain *Streptococcus equinus* AB680295,
 Silva included an additional 6 entries in the download (AB002482.1.1457,
 AF104116.1.356, AEVB01000043.3380.4915, AF429764.1.1430, AF429765.1.1463
-and AJ301607.1.1433). We used the script `cull_downloads.py` to comb
-through the Silva download and write the desired type strains to a new
-file
+and AJ301607.1.1433). We used the script `src_files/cull_downloads.py`
+to comb through the Silva download and write the desired type strains to
+a new file
     `ktw_16s_type_2019-11-25_34.fna`"\`.
 
     ~>python cull_downloads.py -i arb-silva.de_2019-11-10_id739827_tax_silva.fasta
     writing to ktw_16s_type_2019-11-25_34.fna
 
-# Alignment
+## Alignment
 
 The sequences in the `ktw_16s_type_2019-11-25_34.fna` file is then used
 to generate a multi-sequence alignement (MSA) of the 16S rRNA gene. We
@@ -148,7 +150,7 @@ html file of the MSA in a colorized version, and the actual alignment in
 Clustal format (.aln). The Clustal file will be used to extract the
 predicted amplicons.
 
-# Extract amplicons
+## Extract amplicons
 
 The MSA contains the 16S rRNA sequence of the *E. coli* type strain
 EU014689, and this will be used as a reference to map the 9 known
@@ -168,10 +170,10 @@ Sliding Window Analysis (see the sliding\_window folder).
 | V8              | 1243            | 1294           |
 | V9              | 1435            | 1465           |
 
-The python script `extract_16s_vr.py` is used to extract the predicted
-amplicons from the MSA based on the 5’ and 3’ annealing sites of the
-primer set that would be used in PCR. In the example below, the script
-takes three arguments: the path to the MSA
+The python script `src_files/extract_16s_vr.py` is used to extract the
+predicted amplicons from the MSA based on the 5’ and 3’ annealing sites
+of the primer set that would be used in PCR. In the example below, the
+script takes three arguments: the path to the MSA
 (ktw\_type\_16s\_2019-11-25/aln/ktw\_16s\_type\_2019-11-25\_34.aln), the
 name of the file that will be written (cap\_tpstr), and the start and
 stop coordinates (516,808). The output is a multi-record FASTA file of
