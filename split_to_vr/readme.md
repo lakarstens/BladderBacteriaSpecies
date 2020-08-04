@@ -156,19 +156,44 @@ The MSA contains the 16S rRNA sequence of the *E. coli* type strain
 EU014689, and this will be used as a reference to map the 9 known
 variable regions onto the remaining 77 species from the Thomas-White
 dataset. The positions of the variable regions were confirmed through
-Sliding Window Analysis (see the sliding\_window folder).
+Sliding Window Analysis (see the sliding\_window
+folder).
 
-| variable region | *E. coli* start | *E. coli* stop |
-| --------------- | --------------- | -------------- |
-| V1              | 69              | 99             |
-| V2              | 137             | 242            |
-| V3              | 433             | 497            |
-| V4              | 576             | 682            |
-| V5              | 822             | 879            |
-| V6              | 986             | 1043           |
-| V7              | 1117            | 1173           |
-| V8              | 1243            | 1294           |
-| V9              | 1435            | 1465           |
+| variable region | *E. coli* start | *E. coli* stop | MSA start | MSA stop |  |  |
+| --------------- | --------------- | -------------- | --------- | -------- |  |  |
+| V1              | 69              | 99             | 78        | 151      |  |  |
+| V2              | 137             | 242            | 191       | 333      |  |  |
+| V3              | 433             | 497            | 528       | 596      |  |  |
+| V4              | 576             | 682            | 675       | 783      |  |  |
+| V5              | 822             | 879            | 925       | 986      |  |  |
+| V6              | 986             | 1043           | 1093      | 1163     |  |  |
+| V7              | 1117            | 1173           | 1237      | 1297     |  |  |
+| V8              | 1243            | 1294           | 1369      | 1424     |  |  |
+| V9              | 1435            | 1465           | 1566      | 1606     |  |  |
+
+| paper             | name         | sequence                                   | direction       | E. coli pos | MSA pos | platform | notes                                                                           |
+| ----------------- | ------------ | ------------------------------------------ | --------------- | ----------- | ------- | -------- | ------------------------------------------------------------------------------- |
+| Komesu 2017       | A17F         | GTT TGA TCC TGG CTC AG                     | \(\rightarrow\) | 12          | 19      | MiSeq    | possible typo at pos 9                                                          |
+| Komesu 2017       | 515R         | TTA CCG CGG CMG CSG GCA                    | \(\leftarrow\)  | 534         | 633     | MiSeq    |                                                                                 |
+| Komesu 2017       | 515F         | GTG CCA GCT GCC GCG GTA ATA                | \(\rightarrow\) | 536         | 635     | MiSeq    |                                                                                 |
+| Komesu 2017       | 1114R        | GGG GTT GCG CTC GTT GC                     | \(\leftarrow\)  | 1116        | 1234    | MiSeq    |                                                                                 |
+| Bukin 2019        | 16S\_BV2f    | AGT GGC GGA CGG GTG AGT AA                 | \(\rightarrow\) | 102         | 154     | MiSeq    |                                                                                 |
+| Bukin 2019        | 16S\_BV3r    | …                                          | \(\leftarrow\)  | 497?        | 596     | MiSeq    | this sequence is exactly the same as BV2f, and isn’t a palindrome. Typo?        |
+| Bukin 2019        | MiCSQ\_343FL | TAT GGT AAT TGT CTC CTA CGG RRS GCA GCA G  | \(\rightarrow\) | 344         | 435     | MiSeq    | no matches to MSA, assumed numbers are position of *E. coli* 16S sequence\[^1\] |
+| Bukin 2019        | MiCSQ\_806R  | AGT CAG TCA GCC GGA CTA CNV GGG TWT CTA AT | \(\leftarrow\)  | 806         | 909     | MiSeq    | no matches to MSA, assumed numbers are position of *E. coli* 16S sequence       |
+| Caporaso 2011     | F515         | GTG CCA GCM GCC GCG GTA A                  | \(\rightarrow\) | 516         | 616     | pyro     |                                                                                 |
+| Caporaso 2011     | R806         | CCT GAT GHV CCC AWA GAT TA                 | \(\leftarrow\)  | 808         | 911     | pyro     |                                                                                 |
+| Graspeuntner 2018 | V3F          | CCT ACG GGA GGC AGC AG                     | \(\rightarrow\) | 342         | 434     | MiSeq    |                                                                                 |
+| Graspeuntner 2018 | V4R          | GGA CTA CHV GGG TWT CTA AT                 | \(\leftarrow\)  | 789         | 892     | MiSeq    |                                                                                 |
+
+| paper | name      | sequence                | direction       | E. coli pos | MSA pos | platform |
+| ----- | --------- | ----------------------- | --------------- | ----------- | ------- | -------- |
+| me    | v3\_579F  | THT TSS RCA ATG GRS GVA | \(\rightarrow\) | 359         | 452     | MiSeq    |
+| me    | v3\_779R  | GKN SCR AGC STT RHY CGG | \(\leftarrow\)  | 536         | 635     | MiSeq    |
+| me    | v6\_1183F | CCG CCT GGG GAS TAC GVH | \(\rightarrow\) | 875         | 892     | MiSeq    |
+| me    | v6\_1410R | AGT CCC RYA ACG AGC GCA | \(\leftarrow\)  | 1083        | 1203    | MiSeq    |
+
+![](readme_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 The python script `src_files/extract_16s_vr.py` is used to extract the
 predicted amplicons from the MSA based on the 5’ and 3’ annealing sites
