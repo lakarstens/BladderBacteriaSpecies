@@ -14,7 +14,7 @@ subset is shifted forward by one nucleotide. This continues for the
 length of the MSA, in the manner of a sliding window. See the picture
 below.
 
-![](../../resources/md_files/sm_sliding_window_entropy.png)
+![](../resources/md_files/sm_sliding_window_entropy.png)
 
 The size of the window will produce a different “trace” of the
 information in the MSA. Smaller windows will produce jangly graphs,
@@ -26,7 +26,7 @@ entropy for the whole MSA is shown by the green line. A window size of
 the first two variable regions together. A window size of 60 hides all
 variable regions in the MSA.
 
-![](../../resources/md_files/window_sizes.png)
+![](../resources/md_files/window_sizes.png)
 
 For a MSA of gene sequences like the 16S rRNA gene, the sizes of the
 variable regions are fairly well known, and the average size is 75
@@ -50,11 +50,15 @@ range.
 As guessed, a window size of 20 generates a jangly graph, while the
 window size of 140 smoothes the variable regions too much.
 
+![](../resources/md_files/sm_lrg_windows.png)
+
 ![](readme_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 For this data set, a window size of 70 worked best at demarcating the 9
 variable regions of the 16S rRNA gene sequence, shown in the picture
 below.
+
+![](../resources/md_files/entropy_msa.png)
 
 ![](readme_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
