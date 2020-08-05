@@ -193,6 +193,8 @@ folder).
 | me    | v6\_1183F | CCG CCT GGG GAS TAC GVH | \(\rightarrow\) | 875         | 892     | MiSeq    |
 | me    | v6\_1410R | AGT CCC RYA ACG AGC GCA | \(\leftarrow\)  | 1083        | 1203    | MiSeq    |
 
+![](../resources/md_files/amplicon_map.png)
+
 ![](readme_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 The python script `src_files/extract_16s_vr.py` is used to extract the
