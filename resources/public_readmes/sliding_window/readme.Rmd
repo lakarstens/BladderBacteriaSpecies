@@ -1,0 +1,213 @@
+---
+title: "sliding window analysis"
+author: "Carter Hoffman"
+date: " `r Sys.Date()` "
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  md_document:
+    variant: gfm
+
+---
+```{r, eval=FALSE, echo=FALSE}
+output: 
+  pdf_document:
+      toc: true
+      toc_depth: 2
+      df_print: kable
+    
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: readable
+    highlight: tango
+    code_folding: hide
+
+# knit directly to md for github
+output:
+  md_document:
+    variant: gfm
+```
+
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+library(patchwork)
+library(wesanderson)
+```
+
+# Sliding window analysis
+
+Sliding window analysis (SWA) is the same as a _rolling average_ or _moving average_. For a multi-sequence alignment (MSA) of DNA, a fixed subset is taken from the start of the MSA, and the amount of information as measured by the Shannon Entropy is averaged for all columns. Then the subset is shifted forward by one nucleotide. This continues for the length of the MSA, in the manner of a sliding window. See the picture below. 
+
+![](../resources/md_files/sm_sliding_window_entropy.png)
+
+The size of the window will produce a different "trace" of the information in the MSA. Smaller windows will produce jangly graphs, while very large windows will produce graphs that are almost flat. The graphs below show this effect on a mock MSA. There are three variable regions that are 1, 3 and 10 nucleotides wide, and the average Shannon entropy for the whole MSA is shown by the green line. A window size of 10 shows all three regions fairly well, while a window size of 25 smear the first two variable regions together. A window size of 60 hides all variable regions in the MSA.
+
+![](../resources/md_files/window_sizes.png)
+
+For a MSA of gene sequences like the 16S rRNA gene, the sizes of the variable regions are fairly well known, and the average size is 75 nucleotides. We tried 20,70,140 and 170 bp window sizes. Running `weighted_sized_windows.py` calculated the weights for each species in the MSA, and then ran a sliding window analysis (SWA) for each window size. For novel multisequence alignments with variable regions of unknown locations, you have to try a wider range.
+
+```{shellsession, eval=FALSE}
+(base) C:\Users\Carter\Documents\thesis\thesis_git\sliding_window\src_files>python weighted_sized_window.py redo_weight_for_readme.txt
+        Creating weighted dictionary... : [##############################] 99%
+        writing weighted entropy values to ../processed_data/weighted_ent_08_03_1426/ktw_16s_type_2019-11-25_34_weight_ent.csv
+        writing window size 20 to ../processed_data/specific_windows_weighted_08_03_1426
+        writing window size 70 to ../processed_data/specific_windows_weighted_08_03_1426
+        writing window size 140 to ../processed_data/specific_windows_weighted_08_03_1426
+        writing window size 170 to ../processed_data/specific_windows_weighted_08_03_1426
+```
+
+As guessed, a window size of 20 generates a jangly graph, while the window size of 140 smoothes the variable regions too much.
+
+![](../resources/md_files/sm_lrg_windows.png)
+
+```{r, fig.height=4, fig.width=8, echo=FALSE}
+s16_20 <- read_tsv("../../sliding_window/processed_data/specific_windows_weighted_08_03_1426/ktw_16s_w20.csv", col_names = FALSE)
+s16_140 <- read_tsv("../../sliding_window/processed_data/specific_windows_weighted_08_03_1426/ktw_16s_w140.csv", col_names = FALSE)
+
+ss20 <- ggplot(s16_20, aes(x=X1, y=X2)) +
+  geom_line(size=1.1) +
+      theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(title="window size = 20", x="Position in alignment", y="Entropy")
+
+
+ss140 <- ggplot(s16_140, aes(x=X1, y=X2)) +
+  geom_line(size=1.1) +
+    theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), axis.title.y = element_blank(), axis.text.y = element_blank()) +
+  labs(title="window size = 140", x="Position in alignment")
+
+ss20 + ss140
+```
+
+For this data set, a window size of 70 worked best at demarcating the 9 variable regions of the 16S rRNA gene sequence, shown in the picture below. 
+
+![](../resources/md_files/entropy_msa.png)
+
+```{r, fig.height=4, fig.width=8, echo=FALSE} 
+# (vstop-vstart)/2 + vstart
+s16_70 <- read_tsv("../../sliding_window/processed_data/specific_windows_weighted_08_03_1426/ktw_16s_w70.csv", col_names = FALSE)
+adj <- 35
+vstart <- c(78,191,528,675,925,1093,1237,1369,1566)
+vstop <- c(151,333,596,783,986,1163,1297,1424,1606)
+
+ggplot(s16_70, aes(x=X1, y=X2)) +
+    geom_rect(xmin=vstart[1]-adj, xmax=vstop[1]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[2]-adj, xmax=vstop[2]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[3]-adj, xmax=vstop[3]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[4]-adj, xmax=vstop[4]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[5]-adj, xmax=vstop[5]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[6]-adj, xmax=vstop[6]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[7]-adj, xmax=vstop[7]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[8]-adj, xmax=vstop[8]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[9]-adj, xmax=vstop[9]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  annotate("text", x = 80, y = .95, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 230, y = .95, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 530, y = .95, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 700, y = .95, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 920, y = .95, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1100, y = .95, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1230, y = .95, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1360, y = .95, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1550, y = .95, label = "V9", color="gray40", size=5) +
+  geom_line(size=1.1) +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(0,1700,400), limits = c(0,1700))+ 
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(.001,1))+ 
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(x="Position in alignment", y="Entropy")
+```
+
+There are two things of note that are visible in the graph. The first is there seems to be a bump in entropy between V4 and V5. The standard V4 primer set described by Caporaso spans the V4 and this little bump. The second is that the V9 region is almost masked by the steep rise in the entropy at the end of the MSA. The rise in entropy at the end of the MSA indicates many insertions and deletions of the sequences compared across the species represented in this data set.
+
+```{r, fig.height=4, fig.width=8, echo=FALSE}
+pstart <- c(19,635,154,435,616,434,452,982)
+pend <- c(633,1234,596,909,911,892,635,1203)
+rank_pos <- c(.1, .2, .3, .4, .5, .6, .7, .8)
+
+ggplot(s16_70, aes(x=X1, y=X2)) +
+  geom_rect(xmin=vstart[1]-adj, xmax=vstop[1]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[2]-adj, xmax=vstop[2]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[3]-adj, xmax=vstop[3]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[4]-adj, xmax=vstop[4]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[5]-adj, xmax=vstop[5]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[6]-adj, xmax=vstop[6]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[7]-adj, xmax=vstop[7]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[8]-adj, xmax=vstop[8]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[9]-adj, xmax=vstop[9]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+    annotate("text", x = 80, y = .95, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 230, y = .95, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 530, y = .95, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 700, y = .95, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 920, y = .95, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1100, y = .95, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1230, y = .95, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1360, y = .95, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1550, y = .95, label = "V9", color="gray40", size=5) +
+   #bv
+  geom_segment(aes(x = pstart[3], y = rank_pos[2], xend = pend[3], yend = rank_pos[2]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="16S_BV2f-16S_BV3r", x=1000, y=rank_pos[2]), size=4) +
+  #geom_text(aes(label="Bukin 2019", x=950, y=rank_pos[2]), size=5) +
+  geom_text(aes(label="V2-V3", x=700, y=rank_pos[2]), size=5) +
+  
+  #gras
+  geom_segment(aes(x = pstart[6], y = rank_pos[5], xend = pend[6], yend = rank_pos[5]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="V3F-V4R", x=1200, y=rank_pos[5]), size=4) +
+  #geom_text(aes(label="Graspeuntner 2018", x=1350, y=rank_pos[5]), size=5) +
+  geom_text(aes(label="V3-V4", x=1000, y=rank_pos[5]), size=5) +
+  
+  #v3
+  geom_segment(aes(x = pstart[7], y = rank_pos[3], xend = pend[7], yend = rank_pos[3]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="V3_579F-V3_779R", x=1070, y=rank_pos[3]), size=4) +
+  geom_text(aes(label="V3", x=700, y=rank_pos[3]), size=5) +
+  
+  #cap
+  geom_segment(aes(x = pstart[5], y = rank_pos[4], xend = pend[5], yend = rank_pos[4]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="F515-R806", x=1250, y=rank_pos[4]), size=4) +
+  #geom_text(aes(label="Caporaso 2011", x=1300, y=rank_pos[4]), size=5) +
+  geom_text(aes(label="V4", x=950, y=rank_pos[4]), size=5) +
+  
+  #k17
+  geom_segment(aes(x = pstart[1], y = rank_pos[1], xend = pend[1], yend = rank_pos[1]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="A17F-515R", x=900, y=rank_pos[1]), size=4) +
+  #geom_text(aes(label="Komesu 2017", x=1000, y=rank_pos[1]), size=5) +
+  geom_text(aes(label="V1-V3", x=750, y=rank_pos[1]), size=5) +
+  
+  #b646
+  geom_segment(aes(x = pstart[4], y = rank_pos[6], xend = pend[4], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="MiCSQ_343FL-MiCSQ_806R", x=1400, y=rank_pos[6]), size=4) +
+  #geom_text(aes(label="Bukin 2019", x=1250, y=rank_pos[6]), size=5) +
+  geom_text(aes(label="V3-V5", x=1000, y=rank_pos[6]), size=5) +
+  
+  #k515
+  geom_segment(aes(x = pstart[2], y = rank_pos[7], xend = pend[2], yend = rank_pos[7]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="515F-1114R", x=1600, y=rank_pos[7]), size=4) +
+  #geom_text(aes(label="Komesu 2017", x=1650, y=rank_pos[7]), size=5) +
+  geom_text(aes(label="V4-V6", x=1350, y=rank_pos[7]), size=5) +
+  
+  #v6
+  geom_segment(aes(x = pstart[8], y = rank_pos[8], xend = pend[8], yend = rank_pos[8]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_text(aes(label="V6_1183F-V6_1410R", x=1700, y=rank_pos[8]), size=4) +
+  geom_text(aes(label="V6", x=1280, y=rank_pos[8]), size=5) +
+  theme_classic() +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  theme(axis.ticks.y = element_blank(), axis.text.y=element_blank()) +
+  #labs(title="Position of amplicons on the 16S rRNA gene", x="Position in 16S gene sequence", y="Targeted amplicons")
+  labs(x="Position in 16S gene sequence", y="Targeted amplicons")
+```
+
+```{r}
+
+```
+
