@@ -9,8 +9,12 @@ header-includes:
    - \usepackage[T1]{fontenc}
    
 output:
-  md_document:
-    variant: gfm
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: readable
+    highlight: tango
 
 ---
 ```{r, eval=FALSE, echo=FALSE}
@@ -44,12 +48,6 @@ knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print 
 library(tidyverse)
 
 ```
-
-
-
-
-
-
 
 # Introduction
 
