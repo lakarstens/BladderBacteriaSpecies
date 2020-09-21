@@ -9,12 +9,8 @@ header-includes:
    - \usepackage[T1]{fontenc}
    
 output:
-  html_document:
-    toc: true
-    toc_depth: 4
-    toc_float: true
-    theme: readable
-    highlight: tango
+  md_document:
+    variant: gfm
 
 ---
 ```{r, eval=FALSE, echo=FALSE}
@@ -105,7 +101,7 @@ sections.
 
 The general workflow is illustrated below
 
-![](../resources/md_files/vsm_only16s_activity.png)
+![](resources/md_files/vsm_only16s_activity.png)
 
 
 
