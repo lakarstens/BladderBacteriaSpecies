@@ -191,7 +191,7 @@ folder).
 | this project | v6\_1183F | CCG CCT GGG GAS TAC GVH | forward   | 875         | 892     | MiSeq    |
 | this project | v6\_1410R | AGT CCC RYA ACG AGC GCA | reverse   | 1083        | 1203    | MiSeq    |
 
-![](/../resources/md_files/amp_swa.png)
+![](../resources/md_files/amp_swa.png)
 
 The python script `src_files/extract_16s_vr.py` is used to extract the
 predicted amplicons from the MSA based on the 5’ and 3’ annealing sites
