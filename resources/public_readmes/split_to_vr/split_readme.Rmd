@@ -207,7 +207,7 @@ The MSA contains the 16S rRNA sequence of the _E. coli_ type strain EU014689, an
 |this project | v6_1183F|CCG CCT GGG GAS TAC GVH|forward|875| 892 |MiSeq||
 |this project |v6_1410R|AGT CCC RYA ACG AGC GCA|reverse|1083| 1203 |MiSeq||
 
-![](../../../resources/md_files/amp_swa.png)
+![](/../resources/md_files/amp_swa.png)
 
 
 The python script `src_files/extract_16s_vr.py` is used to extract the predicted amplicons from the MSA based on the 5' and 3' annealing sites of the primer set that would be used in PCR. In the example below, the script takes three arguments: the path to the MSA (ktw_type_16s_2019-11-25/aln/ktw_16s_type_2019-11-25_34.aln), the name of the file that will be written (cap_tpstr), and the start and stop coordinates (516,808). The output is a multi-record FASTA file of the predicted amplicon sequence, for each species in the MSA.
