@@ -59,7 +59,6 @@ There are 78 sequences generated for each predicted amplicon. Abbreviations for 
 |V1-V3| A17F-515R|k17|
 |V4-V6 |515F-1114R|k515|
 |V2-V3| 16S_BV2f-16S_BV3r|bbv|
-|V3-V5|MiCSQ_343FL-MiCSQ_806R|b646|
 |V4|F515-R806|cap|
 |V3-V4|V3F-V4R|gras|
 |V6 | v6_1183F-v6_1410R|v6|
@@ -76,6 +75,8 @@ vstop <- c(151,333,596,783,986,1163,1297,1424,1606)
 pstart <- c(19,635,154,435,616,434,452,982)
 pend <- c(633,1234,596,909,911,892,635,1203)
 rank_pos <- c(.1, .2, .3, .4, .5, .6, .7, .8)
+
+vr_pos <- .85
 
 swa_plot <- ggplot(s16_70, aes(x=X1, y=X2)) +
     geom_rect(xmin=vstart[1]-adj, xmax=vstop[1]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
@@ -114,15 +115,15 @@ amp_plot <- ggplot(s16_70, aes(x=X1, y=X2)) +
   geom_rect(xmin=vstart[7]-adj, xmax=vstop[7]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[8]-adj, xmax=vstop[8]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[9]-adj, xmax=vstop[9]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
-    annotate("text", x = 80, y = .95, label = "V1", color="gray40", size=5) +
-  annotate("text", x = 230, y = .95, label = "V2", color="gray40", size=5) +
-  annotate("text", x = 530, y = .95, label = "V3", color="gray40", size=5) +
-  annotate("text", x = 700, y = .95, label = "V4", color="gray40", size=5) +
-  annotate("text", x = 920, y = .95, label = "V5", color="gray40", size=5) +
-  annotate("text", x = 1100, y = .95, label = "V6", color="gray40", size=5) +
-  annotate("text", x = 1230, y = .95, label = "V7", color="gray40", size=5) +
-  annotate("text", x = 1360, y = .95, label = "V8", color="gray40", size=5) +
-  annotate("text", x = 1550, y = .95, label = "V9", color="gray40", size=5) +
+    annotate("text", x = 80, y = vr_pos, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 230, y = vr_pos, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 530, y = vr_pos, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 700, y = vr_pos, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 920, y = vr_pos, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1100, y = vr_pos, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1230, y = vr_pos, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1360, y = vr_pos, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1550, y = vr_pos, label = "V9", color="gray40", size=5) +
    #bv
   geom_segment(aes(x = pstart[3], y = rank_pos[2], xend = pend[3], yend = rank_pos[2]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="16S_BV2f-16S_BV3r", x=1000, y=rank_pos[2]), size=4) +
@@ -153,24 +154,28 @@ amp_plot <- ggplot(s16_70, aes(x=X1, y=X2)) +
   geom_text(aes(label="V1-V3", x=750, y=rank_pos[1]), size=5) +
   
   #b646
-  geom_segment(aes(x = pstart[4], y = rank_pos[6], xend = pend[4], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_segment(aes(x = pstart[4], y = rank_pos[6], xend = pend[4], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="MiCSQ_343FL-MiCSQ_806R", x=1400, y=rank_pos[6]), size=4) +
   #geom_text(aes(label="Bukin 2019", x=1250, y=rank_pos[6]), size=5) +
-  geom_text(aes(label="V3-V5", x=1000, y=rank_pos[6]), size=5) +
+  #geom_text(aes(label="V3-V5", x=1000, y=rank_pos[6]), size=5) +
   
   #k515
-  geom_segment(aes(x = pstart[2], y = rank_pos[7], xend = pend[2], yend = rank_pos[7]), color = wes_palette("Darjeeling2")[5], size=2) +
+  geom_segment(aes(x = pstart[2], y = rank_pos[6], xend = pend[2], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="515F-1114R", x=1600, y=rank_pos[7]), size=4) +
   #geom_text(aes(label="Komesu 2017", x=1650, y=rank_pos[7]), size=5) +
-  geom_text(aes(label="V4-V6", x=1350, y=rank_pos[7]), size=5) +
+  geom_text(aes(label="V4-V6", x=1350, y=rank_pos[6]), size=5) +
   
   #v6
-  geom_segment(aes(x = pstart[8], y = rank_pos[8], xend = pend[8], yend = rank_pos[8]), color = wes_palette("Darjeeling2")[5], size=2) +
+  geom_segment(aes(x = pstart[8], y = rank_pos[7], xend = pend[8], yend = rank_pos[7]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="V6_1183F-V6_1410R", x=1700, y=rank_pos[8]), size=4) +
-  geom_text(aes(label="V6", x=1280, y=rank_pos[8]), size=5) +
+  geom_text(aes(label="V6", x=1280, y=rank_pos[7]), size=5) +
+  
   theme_classic() +
   theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_blank(), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
   theme(axis.ticks.y = element_blank()) +
+  theme(axis.text.y = element_blank()) +
+  #, axis.text.x=element_text(angle = 30, hjust = 1)) +
+  scale_x_continuous(breaks=seq(0,1600,200)) +
   #labs(title="Position of amplicons on the 16S rRNA gene", x="Position in 16S gene sequence", y="Targeted amplicons")
   labs(x="Position in 16S gene sequence", y="Targeted amplicons")
 ```

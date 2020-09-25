@@ -14,16 +14,15 @@ There are 78 sequences generated for each predicted amplicon.
 Abbreviations for the predicted amplicons were used in the filenames for
 convienience, and are listed in the table below.
 
-| region | primer                   | abbreviation |
-| ------ | ------------------------ | ------------ |
-| V1-V3  | A17F-515R                | k17          |
-| V4-V6  | 515F-1114R               | k515         |
-| V2-V3  | 16S\_BV2f-16S\_BV3r      | bbv          |
-| V3-V5  | MiCSQ\_343FL-MiCSQ\_806R | b646         |
-| V4     | F515-R806                | cap          |
-| V3-V4  | V3F-V4R                  | gras         |
-| V6     | v6\_1183F-v6\_1410R      | v6           |
-| V3     | v3\_579F-v3\_779R        | v3           |
+| region | primer              | abbreviation |
+| ------ | ------------------- | ------------ |
+| V1-V3  | A17F-515R           | k17          |
+| V4-V6  | 515F-1114R          | k515         |
+| V2-V3  | 16S\_BV2f-16S\_BV3r | bbv          |
+| V4     | F515-R806           | cap          |
+| V3-V4  | V3F-V4R             | gras         |
+| V6     | v6\_1183F-v6\_1410R | v6           |
+| V3     | v3\_579F-v3\_779R   | v3           |
 
 ``` r
 amp_plot / swa_plot + plot_annotation(tag_levels = 'A')
