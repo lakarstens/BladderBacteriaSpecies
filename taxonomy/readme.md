@@ -24,11 +24,7 @@ convienience, and are listed in the table below.
 | V6     | v6\_1183F-v6\_1410R | v6           |
 | V3     | v3\_579F-v3\_779R   | v3           |
 
-``` r
-amp_plot / swa_plot + plot_annotation(tag_levels = 'A')
-```
-
-![](taxonomy_readme_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](../resources/md_files/amp_swa.png)
 
 ## Classification
 
