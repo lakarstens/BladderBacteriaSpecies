@@ -186,35 +186,33 @@ The MSA contains the 16S rRNA sequence of the _E. coli_ type strain EU014689, an
 | V9| 1435| 1465 | 1566 |1606 |
 
 
-| paper | name | sequence | direction | E. coli pos | MSA pos | platform| notes |
-|-----------|-------|--------|--------|----|----|----|--------------------|
-|Komesu 2017| A17F |GTT TGA TCC TGG CTC AG|$\rightarrow$|12|19 | MiSeq| possible typo at pos 9 |
-|Komesu 2017 | 515R|TTA CCG CGG CMG CSG GCA|$\leftarrow$|534| 633| MiSeq||
-|Komesu 2017 |515F| GTG CCA GCT GCC GCG GTA ATA|$\rightarrow$|536|635 | MiSeq||
-|Komesu 2017 |1114R|GGG GTT GCG CTC GTT GC|$\leftarrow$|1116|1234 | MiSeq||
-|Bukin 2019| 16S_BV2f|AGT GGC GGA CGG GTG AGT AA|$\rightarrow$|102|154 | MiSeq||
-|Bukin 2019|16S_BV3r| ... |$\leftarrow$|497?| 596| MiSeq|this sequence is exactly the same as BV2f, and isn't a palindrome. Typo? |
-|Bukin 2019|MiCSQ_343FL|TAT GGT AAT TGT CTC CTA CGG RRS GCA GCA G|$\rightarrow$|344 | 435|MiSeq|no matches to MSA, assumed numbers are position of _E. coli_ 16S sequence[^1]|
-|Bukin 2019|MiCSQ_806R|AGT CAG TCA GCC GGA CTA CNV GGG TWT CTA AT|$\leftarrow$|806 | 909|MiSeq|no matches to MSA, assumed numbers are position of _E. coli_ 16S sequence|
-|Caporaso 2011|F515 |GTG CCA GCM GCC GCG GTA A | $\rightarrow$|516  | 616| pyro||
-|Caporaso 2011|R806 |CCT GAT GHV CCC AWA GAT TA | $\leftarrow$| 808 | 911| pyro||
-|Graspeuntner 2018|V3F|CCT ACG GGA GGC AGC AG|$\rightarrow$|342 | 434|MiSeq||
-|Graspeuntner 2018|V4R|GGA CTA CHV GGG TWT CTA AT|$\leftarrow$|789 |892 |MiSeq||
+| paper | name | sequence | direction | E. coli pos | MSA pos | platform|
+|-----------|-------|--------|--------|----|----|----|
+|Kumar 2005| A17F |GTT TGA TCC TGG CTC AG|forward|12|19 |
+|Kumar 2011 | 515R|TTA CCG CGG CMG CSG GCA|reverse|534| 633| MiSeq|
+|Kumar 2011 |515F| GTG CCA GCT GCC GCG GTA ATA|forward|536|635 | MiSeq|
+|Kumar 2011 |1114R|GGG GTT GCG CTC GTT GC|reverse|1116|1234 | MiSeq|
+|Bukin 2019| 16S_BV2f|AGT GGC GGA CGG GTG AGT AA|forward|102|154 | MiSeq|
+| Walter 2000 |HDA-2 | GTA TTA CCG CGG CTG CTG GCA C |  reverse |497| 596| MiSeq|
+|Caporaso 2011|F515 |GTG CCA GCM GCC GCG GTA A | forward|516  | 616| pyro|
+|Caporaso 2011|R806 |CCT GAT GHV CCC AWA GAT TA | reverse| 808 | 911| pyro|
+|Graspeuntner 2018|V3F|CCT ACG GGA GGC AGC AG|forward|342 | 434|MiSeq|
+|Graspeuntner 2018|V4R|GGA CTA CHV GGG TWT CTA AT|reverse|789 |892 |MiSeq|
 
 
 | paper | name | sequence | direction | E. coli pos  | MSA pos |platform| notes |
 |-----------|-------|--------|--------|----|----|--------------------|
-|me | v3_579F|THT TSS RCA ATG GRS GVA|$\rightarrow$|359| 452 |MiSeq||
-|me | v3_779R|GKN SCR AGC STT RHY CGG|$\leftarrow$|536| 635 |MiSeq||
-|me | v6_1183F|CCG CCT GGG GAS TAC GVH|$\rightarrow$|875| 892 |MiSeq||
-|me |v6_1410R|AGT CCC RYA ACG AGC GCA|$\leftarrow$|1083| 1203 |MiSeq||
+|this project | v3_579F|THT TSS RCA ATG GRS GVA|forward|359| 452 |MiSeq||
+|this project | v3_779R|GKN SCR AGC STT RHY CGG|reverse|536| 635 |MiSeq||
+|this project | v6_1183F|CCG CCT GGG GAS TAC GVH|forward|875| 892 |MiSeq||
+|this project |v6_1410R|AGT CCC RYA ACG AGC GCA|reverse|1083| 1203 |MiSeq||
 
-
-![](../resources/md_files/amplicon_map.png)
 
 ```{r, fig.height=4, fig.width=8, echo=FALSE}
-s16_70 <- read_tsv("../../sliding_window/processed_data/specific_windows_weighted_08_03_1426/ktw_16s_w70.csv", col_names = FALSE)
+s16_70 <- read_tsv("../../../resources/specific_windows_weighted_08_03_1426/ktw_16s_w70.csv", col_names = FALSE)
+
 adj <- 35
+
 vstart <- c(78,191,528,675,925,1093,1237,1369,1566)
 vstop <- c(151,333,596,783,986,1163,1297,1424,1606)
 
@@ -222,7 +220,36 @@ pstart <- c(19,635,154,435,616,434,452,982)
 pend <- c(633,1234,596,909,911,892,635,1203)
 rank_pos <- c(.1, .2, .3, .4, .5, .6, .7, .8)
 
-ggplot(s16_70, aes(x=X1, y=X2)) +
+vr_pos <- .85
+
+swa_plot <- ggplot(s16_70, aes(x=X1, y=X2)) +
+    geom_rect(xmin=vstart[1]-adj, xmax=vstop[1]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[2]-adj, xmax=vstop[2]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[3]-adj, xmax=vstop[3]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[4]-adj, xmax=vstop[4]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[5]-adj, xmax=vstop[5]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[6]-adj, xmax=vstop[6]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[7]-adj, xmax=vstop[7]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[8]-adj, xmax=vstop[8]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  geom_rect(xmin=vstart[9]-adj, xmax=vstop[9]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
+  annotate("text", x = 80, y = .95, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 230, y = .95, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 530, y = .95, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 700, y = .95, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 920, y = .95, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1100, y = .95, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1230, y = .95, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1360, y = .95, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1550, y = .95, label = "V9", color="gray40", size=5) +
+  geom_line(size=1.1) +
+  theme_classic() +
+  scale_x_continuous(breaks=seq(0,1700,400), limits = c(0,1700))+ 
+  scale_y_continuous(breaks=seq(0,1,.2), limits = c(.001,1))+ 
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  labs(x="Position in alignment", y="Entropy")
+
+
+amp_plot <- ggplot(s16_70, aes(x=X1, y=X2)) +
   geom_rect(xmin=vstart[1]-adj, xmax=vstop[1]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[2]-adj, xmax=vstop[2]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[3]-adj, xmax=vstop[3]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
@@ -232,15 +259,15 @@ ggplot(s16_70, aes(x=X1, y=X2)) +
   geom_rect(xmin=vstart[7]-adj, xmax=vstop[7]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[8]-adj, xmax=vstop[8]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
   geom_rect(xmin=vstart[9]-adj, xmax=vstop[9]-adj, ymin=-1, ymax=Inf, fill="ivory3") +
-    annotate("text", x = 80, y = .95, label = "V1", color="gray40", size=5) +
-  annotate("text", x = 230, y = .95, label = "V2", color="gray40", size=5) +
-  annotate("text", x = 530, y = .95, label = "V3", color="gray40", size=5) +
-  annotate("text", x = 700, y = .95, label = "V4", color="gray40", size=5) +
-  annotate("text", x = 920, y = .95, label = "V5", color="gray40", size=5) +
-  annotate("text", x = 1100, y = .95, label = "V6", color="gray40", size=5) +
-  annotate("text", x = 1230, y = .95, label = "V7", color="gray40", size=5) +
-  annotate("text", x = 1360, y = .95, label = "V8", color="gray40", size=5) +
-  annotate("text", x = 1550, y = .95, label = "V9", color="gray40", size=5) +
+    annotate("text", x = 80, y = vr_pos, label = "V1", color="gray40", size=5) +
+  annotate("text", x = 230, y = vr_pos, label = "V2", color="gray40", size=5) +
+  annotate("text", x = 530, y = vr_pos, label = "V3", color="gray40", size=5) +
+  annotate("text", x = 700, y = vr_pos, label = "V4", color="gray40", size=5) +
+  annotate("text", x = 920, y = vr_pos, label = "V5", color="gray40", size=5) +
+  annotate("text", x = 1100, y = vr_pos, label = "V6", color="gray40", size=5) +
+  annotate("text", x = 1230, y = vr_pos, label = "V7", color="gray40", size=5) +
+  annotate("text", x = 1360, y = vr_pos, label = "V8", color="gray40", size=5) +
+  annotate("text", x = 1550, y = vr_pos, label = "V9", color="gray40", size=5) +
    #bv
   geom_segment(aes(x = pstart[3], y = rank_pos[2], xend = pend[3], yend = rank_pos[2]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="16S_BV2f-16S_BV3r", x=1000, y=rank_pos[2]), size=4) +
@@ -271,27 +298,36 @@ ggplot(s16_70, aes(x=X1, y=X2)) +
   geom_text(aes(label="V1-V3", x=750, y=rank_pos[1]), size=5) +
   
   #b646
-  geom_segment(aes(x = pstart[4], y = rank_pos[6], xend = pend[4], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
+  #geom_segment(aes(x = pstart[4], y = rank_pos[6], xend = pend[4], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="MiCSQ_343FL-MiCSQ_806R", x=1400, y=rank_pos[6]), size=4) +
   #geom_text(aes(label="Bukin 2019", x=1250, y=rank_pos[6]), size=5) +
-  geom_text(aes(label="V3-V5", x=1000, y=rank_pos[6]), size=5) +
+  #geom_text(aes(label="V3-V5", x=1000, y=rank_pos[6]), size=5) +
   
   #k515
-  geom_segment(aes(x = pstart[2], y = rank_pos[7], xend = pend[2], yend = rank_pos[7]), color = wes_palette("Darjeeling2")[5], size=2) +
+  geom_segment(aes(x = pstart[2], y = rank_pos[6], xend = pend[2], yend = rank_pos[6]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="515F-1114R", x=1600, y=rank_pos[7]), size=4) +
   #geom_text(aes(label="Komesu 2017", x=1650, y=rank_pos[7]), size=5) +
-  geom_text(aes(label="V4-V6", x=1350, y=rank_pos[7]), size=5) +
+  geom_text(aes(label="V4-V6", x=1350, y=rank_pos[6]), size=5) +
   
   #v6
-  geom_segment(aes(x = pstart[8], y = rank_pos[8], xend = pend[8], yend = rank_pos[8]), color = wes_palette("Darjeeling2")[5], size=2) +
+  geom_segment(aes(x = pstart[8], y = rank_pos[7], xend = pend[8], yend = rank_pos[7]), color = wes_palette("Darjeeling2")[5], size=2) +
   #geom_text(aes(label="V6_1183F-V6_1410R", x=1700, y=rank_pos[8]), size=4) +
-  geom_text(aes(label="V6", x=1280, y=rank_pos[8]), size=5) +
+  geom_text(aes(label="V6", x=1280, y=rank_pos[7]), size=5) +
+  
   theme_classic() +
-  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_text(size=16), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
-  theme(axis.ticks.y = element_blank(), axis.text.y=element_blank()) +
+  theme(plot.title = element_text(size=20), plot.subtitle = element_text(size=14), axis.title.y= element_text(size=16), axis.title.x = element_blank(), axis.text = element_text(size=14), legend.title = element_text(size=14),legend.text = element_text(size=14), strip.text.x = element_text(size = 14), strip.text.y = element_text(size = 14)) +
+  theme(axis.ticks.y = element_blank()) +
+  theme(axis.text.y = element_blank()) +
+  #, axis.text.x=element_text(angle = 30, hjust = 1)) +
+  scale_x_continuous(breaks=seq(0,1600,200)) +
   #labs(title="Position of amplicons on the 16S rRNA gene", x="Position in 16S gene sequence", y="Targeted amplicons")
   labs(x="Position in 16S gene sequence", y="Targeted amplicons")
 ```
+
+```{r, fig.height=8, fig.width=8}
+amp_plot / swa_plot + plot_annotation(tag_levels = 'A')
+```
+
 
 The python script `src_files/extract_16s_vr.py` is used to extract the predicted amplicons from the MSA based on the 5' and 3' annealing sites of the primer set that would be used in PCR. In the example below, the script takes three arguments: the path to the MSA (ktw_type_16s_2019-11-25/aln/ktw_16s_type_2019-11-25_34.aln), the name of the file that will be written (cap_tpstr), and the start and stop coordinates (516,808). The output is a multi-record FASTA file of the predicted amplicon sequence, for each species in the MSA.
 
@@ -303,8 +339,6 @@ writing to ../processed_data/extracted_16s_regions_2019-11-26/extracted_cap_tpst
 There are two important notes. The first is that you'll need to determine where a primer set's annealing sites correspond to the sequence of the _E. coli_ type strain EU014689. We used the program UGENE[^6] to search the MSA for the oligo sequence of the primer and transposed to _E. coli_, but there are other methods that will work. The second is that this script producs _predicted_ amplicons. It doesn't check if the primers will actually anneal to a specific species' 16S rRNA gene sequence. That's a feature that will probably be added later. 
 
 [^6]: Okonechnikov K, Golosova O, Fursov M. Unipro UGENE: a unified bioinformatics toolkit. Bioinformatics. 2012 Apr;28(8):1166–7. 
-
-
 
 
 
