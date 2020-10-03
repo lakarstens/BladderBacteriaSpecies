@@ -7,12 +7,12 @@
 This repository contains the coding resources that were used in
 producing the results of the manuscript divided into 5 sections.
 
-``` 
-* gathering the sequences used in the study   
-* extracting the predicted subsequences using primer annealing sites as coordinates (targeted amplicons)   
-* identification of the targeted amplicons using all classification schemes   
-* evaluation of the results  
-```
+  - gathering the sequences used in the study  
+  - extracting the predicted subsequences using primer annealing sites
+    as coordinates (targeted amplicons)  
+  - identification of the targeted amplicons using all classification
+    schemes  
+  - evaluation of the results
 
 This study was done in two parts. The first part computationally
 compares the phylogenetic resolution that is achieved by combining 4
