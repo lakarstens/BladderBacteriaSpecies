@@ -1,0 +1,91 @@
+---
+title: "Evaluating classifiers"
+author: "Carter Hoffman"
+date: " `r Sys.Date()` "
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  html_document:
+      toc: true
+      toc_depth: 4
+      toc_float: true
+      theme: readable
+      highlight: tango
+      code_folding: hide
+
+---
+```{r, eval=FALSE, echo=FALSE}
+output: 
+  pdf_document:
+      toc: true
+      toc_depth: 2
+      df_print: kable
+    
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: readable
+    highlight: tango
+
+# knit directly to md for github
+output:
+  md_document:
+    variant: gfm
+```
+
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+
+```
+
+# record linkage
+
+Assigning species level taxonomy to a bacterial sequence is considered a type of record linkage. In this paradigm, the unknown bacterial sequence (the _identifier_) is compared against sequences in a reference database (the _database_) by a classification algorithm (the _classifier_, such as Naive Bayes or BLCA) until a match is found. These three components are called the _classification scheme_. An example of a classification scheme is the V4 region of the 16S rRNA gene as an identifier, the Silva database, and the Naive Bayes classifier. A _record_ is the collection of information that pertains to one subject. In this study, the information is held in one FASTA file, and at a minimum is composed of a unique alphanumeric identifier and DNA sequence. The _query record_ is the unknown bacterial sequence. In this study, only the unique label and gene sequence used as the identifier is held in this record. The _reference record_ is a sequence to which the query sequence is compared. This record typically has more information associated with it than the query. In this study, the reference records contain the taxonomic lineage in addition to the ID and a the complete sequence of the 16S rRNA gene. 
+
+## the confusion matrix, precision, and recall
+
+Unlike standard classification problems like regression or clustering, record linkage is a heavily unbalanced classification procedure, because the number of nonrelevant records far outnumber the number of relevant records. The standard method of evaluating the performance of a classifier involves accounting for all records in both the query and reference database, but this practice isn't suitable for record linkage. Instead, the most usefull measures are _recall_, the proportion of predicted true matches to all actual matches, and _precision_, the proportion of predicted matches that are correct. Neither depend on the number of nonrelevant records to evaluate the performance of the classification scheme. Below is a picture of the confusion matrix that breaks down the different categories that can occur after classification. The letter designation of the confusion matrix follows the Christian 2018 paper.
+
+![](../../../resources/md_files/conf_matrix.png)
+
+As an example of how including the true non-matches skews some performance measures, consider the NCBI 16S database. It has roughly 200,000 records, while the query database of the Thomas-White dataset this project uses is roughly 79 records. The _accuracy_ of a classification scheme is the sum of true matches and true non-matches (d+a) divided by the total number of classfied record pairs (a+b+c+d). Even if all 79 records are classified as false matches (cell b), the accuracy is still (a+d)/(a+b+c+d) = (200000)/(200079) = 99.96%. That's not an informative measurement.
+
+## definitions of confusion matrix cells
+
+For the computational portion of this study the cells of the confusion matrix are defined as follows:
+
+  * True match - All record pairs assigned as a match that have identical genus and species labels.
+  * False match - All record pairs assigned as a match that did not have identical genus and species labels.
+  * False non-match - If a record representing a species in the Thomas-White dataset was present in the database, but was not assigned as a match, the record was evaluated as a false non-match. 
+  * True non-match - All records in the reference database that were not in the Thomas-White dataset. While records assigned to this category were not used in evaluating the classification schemes in this manuscript, the definition is still included for completeness.
+  
+Determining what is a false non-match is a little counterintuitive. The Naive Bayes and BLCA classifiers will always return the record pair that has the highest posterior probability, regardless of how lousy that value is. False non-matches occur when a query record and a reference record truly are a match, but the classifier fails to designate them as so. Instead, the classifier picks a different record pair as the match. The record query and reference records that truly match have been overlooked by the classifier, and is evaluated as a false non-match (or a _missed match_, in record linkage vocabulary). The record pair that the classifier erroneously considers a match is evaluated as a false match. However, often the reference database doesn't contain a record that matches a query, because the reference database is incomplete. Any record pair designated as a match by the classifier will automatically be a false match, but there will be no corresponding false non-match.
+
+## evaluation walkthrough
+
+Now for an example of classification evaluation used in this study. Suppose there is a classification scheme composed a set of query sequences (the rows E,F,G) and the set of reference sequences (the columns E,F,L,M) held in a reference database. In this example, the number of reference records is greater than the query records, and the reference is missing a corresponding G record from the query set. 
+
+![](../../../resources/md_files/class_space_34.png)
+
+If the query and reference record letters are the same, then they are designated as a match. If they are different they are designated as a non-match. Next, the classifier is allowed to assign record pairs as matches or non-matches for all query sequences, represented as green plus signs for matches and blank cells as non-matches. Some results are correct, and some are not. Note that despite the lack of a matching record in the reference database, the classifier still designated the (G:M) pair as a match. 
+
+![](../../../resources/md_files/class_eval34.png)
+
+Using the definitions for assigning the classifications to the confusion matrix, there is one true match (green square), two false matches (red squares), one false non-match (yellow square), and 8 true non-matches (white squares). The cell values of the confusion matrix are then filled out, and performance measurements can be calculated. For this classification scheme, the precision is 1/(1+2)=.33, and recall is 1/(1+1)=.5.
+
+### when the database is large
+
+
+
