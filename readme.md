@@ -5,7 +5,7 @@
 
 
 This repository contains the coding resources that were used in
-producing the results of the manuscript divided into 5 sections.
+producing the results of the manuscript divided into 4 sections.
 
   - gathering the sequences used in the study  
   - extracting the predicted subsequences using primer annealing sites
