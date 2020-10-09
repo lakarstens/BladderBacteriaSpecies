@@ -1,0 +1,63 @@
+---
+title: "title"
+author: "Carter Hoffman"
+date: " `r Sys.Date()` "
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+    pdf_document:
+        toc: true
+        toc_depth: 2
+        fig_width: 5
+        fig_height: 4
+        df_print: kable
+
+---
+
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+

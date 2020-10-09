@@ -1,0 +1,117 @@
+---
+title: "unit tests"
+author: "Carter Hoffman"
+date: " `r Sys.Date()` "
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  html_document:
+      toc: true
+      toc_depth: 4
+      toc_float: true
+      theme: readable
+      highlight: tango
+      code_folding: hide
+---
+
+
+```{r}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r}
+# load libraries
+library(tidyverse)
+library(testthat) 
+library(kableExtra)
+
+# load functions to test
+source("../../evaluation/report_src/central_evaluation_plain.R")
+
+```
+
+# evaluation tests
+
+## one
+
+at the moment, f1_records() thinks all records are in the database. So the confusion matrix breaks down like this
+
+tm=3
+fm=6
+mm=6
+tnm=66
+
+r=.3333
+p=.3333
+f=.3333
+
+when I get it set up so it works for missing records it breaks down like this:
+
+tm=3
+fm=6
+mm=3
+tnm=69
+
+r=.5
+p=.33
+f=.398
+
+
+## two 
+
+tm=6
+fm=3
+mm=3
+tnm=69
+
+r=.667
+p=.667
+f=.667
+
+For the test_two and confidence > .3, the breakdown is like this:
+
+tm=4
+fm=2
+mm=2
+tnm=73
+
+p=.6667
+r=.6667
+f=.6667
+
+## tests
+
+```{r}
+test_results <- test_dir("./", reporter="summary")
+```
+
+```{r}
+#kbl(test_results) %>% kable_styling()
+test_results
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,8 @@
+#########################################
+# ignore all files under raw_data and   #
+# processed_data under the current dir  #
+#########################################
+
+**/raw_data/*
+**/processed_data/*
+**/resource_files/*

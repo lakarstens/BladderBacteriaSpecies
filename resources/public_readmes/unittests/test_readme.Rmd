@@ -1,0 +1,53 @@
+---
+title: "Readme"
+author: "Carter Hoffman"
+date: " `r Sys.Date()` "
+
+header-includes:
+   - \usepackage{amsmath,amssymb}
+   - \usepackage[bitstream-charter]{mathdesign}
+   - \usepackage[T1]{fontenc}
+   
+output: 
+  md_document:
+    variant: gfm
+
+---
+```{r, eval=FALSE, echo=FALSE}
+output: 
+  pdf_document:
+      toc: true
+      toc_depth: 2
+      df_print: kable
+    
+output: 
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: readable
+    highlight: tango
+
+# knit directly to md for github
+output:
+  md_document:
+    variant: gfm
+```
+
+
+```{r echo=FALSE}
+knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
+```
+
+```{r echo=FALSE}
+# load libraries
+library(tidyverse)
+
+```
+
+# Test suite
+
+No coding would be complete without tests. While the tests here are far from complete, they are a good start.
+
+For the python tests, we use the `unittest` module. For the R tests, we use the `testthat` library. 
+
