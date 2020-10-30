@@ -52,9 +52,21 @@ library(tidyverse)
 
 # evaluating identification results
 
-This part of the project was conceptually heavy, as opposed to the straightforward amount of number-crunching that occured upstream. The section on Record Linkage is included here because "confusion matrix" is a well deserved title, and it helps to have explanations with lots of pictures.
+This part of the project relied more on how terms are defined, as opposed to the straightforward amount of number-crunching that occured upstream. The section on Record Linkage is included here because "confusion matrix" is a well deserved title, and it helps to have explanations with lots of pictures.
 
 # evaluating computational results
+
+The computational identification results are held in a CSV file that contains the sequence ID, the species of the extracted amplicon (the query record), the species name (the database record) assigned by BLCA or Naive Bayes, the confidence score, and if the names of the query and database records are a match. A "match" is designated by a 1, "non-match" is designated by a 0. Some examples are listed in the table below.
+
+
+|id | query | blca | confidence | match |
+|-----------------|-----------------|-----------------|-----------------|-----------------|
+|AB618790.1.1522 | Actinomyces naeslundii | Actinomyces naeslundii | 89.5603174603 | 1|
+|AB920570.1.1436 | Gordonia terrae | Gordonia terrae | 45.3428973201 | 1|
+|AF003929.1.1520 | Streptococcus mitis | Streptococcus oralis | 36.5655094905 | 0|
+|AF133538.1.1486 | Oligella urethralis | Oligella urethralis | 100.0 | 1|
+
+The results are then assigned as true matches, false matches and false non-matches according to the following definitions: 
 
   * True match - All record pairs assigned as a match that have identical genus and species labels.
   
@@ -63,6 +75,14 @@ This part of the project was conceptually heavy, as opposed to the straightforwa
   * False non-match - If a record representing a species in the Thomas-White dataset was present in the database, but was not assigned as a match, the record was evaluated as a false non-match. 
   
   * True non-match - All records in the reference database that were not in the Thomas-White dataset. While records assigned to this category were not used in evaluating the classification schemes in this manuscript, the definition is still included for completeness.
+  
+While true matches and false matches are easy, the false non-matches are a little tricky. There are only two ways for a false non-match to occur:
+
+   1. a known true match is missed and another record is assigned as a match
+   
+   2. a true match that is below the confidence score threshold
+  
+How can you tell when the classification algorithm has missed a true match? By making a list of all the species that are absent from the reference database, and then checking the species name of the query against this list when the value in the match column is 0. In the example above, _Streptococcus mitis_ was identified as _Streptococcus oralis_. During evaluation, the function `f1_records()` checks _Streptococcus mitis_ against a list of the species that are missing from the particular database used by the classification scheme. If the species is truly missing, then no false non-match is recorded, because there is no way for the classification scheme to make a correct identification.
 
 
 # evaluating the validation results
@@ -147,7 +167,7 @@ The graph below is a summary of how the comparison between the V4 sequencing and
 
 ### precision, recall and accuracy
 
-
+The precision, recall and accuracy of the V4 validation classification schemes were calculated based on 
 
 
 # record linkage

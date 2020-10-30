@@ -1667,10 +1667,72 @@ div.tocify {
 
 <div id="evaluating-identification-results" class="section level1">
 <h1>evaluating identification results</h1>
-<p>This part of the project was conceptually heavy, as opposed to the straightforward amount of number-crunching that occured upstream. The section on Record Linkage is included here because “confusion matrix” is a well deserved title, and it helps to have explanations with lots of pictures.</p>
+<p>This part of the project relied more on how terms are defined, as opposed to the straightforward amount of number-crunching that occured upstream. The section on Record Linkage is included here because “confusion matrix” is a well deserved title, and it helps to have explanations with lots of pictures.</p>
 </div>
 <div id="evaluating-computational-results" class="section level1">
 <h1>evaluating computational results</h1>
+<p>The computational identification results are held in a CSV file that contains the sequence ID, the species of the extracted amplicon (the query record), the species name (the database record) assigned by BLCA or Naive Bayes, the confidence score, and if the names of the query and database records are a match. A “match” is designated by a 1, “non-match” is designated by a 0. Some examples are listed in the table below.</p>
+<table>
+<colgroup>
+<col width="20%"></col>
+<col width="20%"></col>
+<col width="20%"></col>
+<col width="20%"></col>
+<col width="20%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th>id</th>
+<th>query</th>
+<th>blca</th>
+<th>confidence</th>
+<th>match</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>AB618790.1.1522</td>
+<td>Actinomyces naeslundii</td>
+<td>Actinomyces naeslundii</td>
+<td>89.5603174603</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>AB920570.1.1436</td>
+<td>Gordonia terrae</td>
+<td>Gordonia terrae</td>
+<td>45.3428973201</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>AF003929.1.1520</td>
+<td>Streptococcus mitis</td>
+<td>Streptococcus oralis</td>
+<td>36.5655094905</td>
+<td>0</td>
+</tr>
+<tr class="even">
+<td>AF133538.1.1486</td>
+<td>Oligella urethralis</td>
+<td>Oligella urethralis</td>
+<td>100.0</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>The results are then assigned as true matches, false matches and false non-matches according to the following definitions:</p>
+<ul>
+<li><p>True match - All record pairs assigned as a match that have identical genus and species labels.</p></li>
+<li><p>False match - All record pairs assigned as a match that did not have identical genus and species labels.</p></li>
+<li><p>False non-match - If a record representing a species in the Thomas-White dataset was present in the database, but was not assigned as a match, the record was evaluated as a false non-match.</p></li>
+<li><p>True non-match - All records in the reference database that were not in the Thomas-White dataset. While records assigned to this category were not used in evaluating the classification schemes in this manuscript, the definition is still included for completeness.</p></li>
+</ul>
+<p>While true matches and false matches are easy, the false non-matches are a little tricky. There are only two ways for a false non-match to occur:</p>
+<ol style="list-style-type: decimal">
+<li><p>a known true match is missed and another record is assigned as a match</p></li>
+<li><p>a true match that is below the confidence score threshold</p></li>
+</ol>
+<p>How can you tell when the classification algorithm has missed a true match? By making a list of all the species that are absent from the reference database, and then checking the species name of the query against this list when the value in the match column is 0. In the example above, <em>Streptococcus mitis</em> was identified as <em>Streptococcus oralis</em>. During evaluation, the function <code>f1_records()</code> checks <em>Streptococcus mitis</em> against a list of the species that are missing from the particular database used by the classification scheme. If the species is truly missing, then no false non-match is recorded, because there is no way for the classification scheme to make a correct identification.</p>
 </div>
 <div id="evaluating-the-validation-results" class="section level1">
 <h1>evaluating the validation results</h1>
