@@ -1,5 +1,5 @@
 ---
-title: "stop writing data on paper"
+title: "V4 validation"
 author: "Carter Hoffman"
 date: "_last edited `r Sys.Date()`_"
 
@@ -15,9 +15,16 @@ output:
       toc_float: true
       theme: readable
       highlight: tango
+      code_folding: hide
 
 ---
+
 ```{r, eval=FALSE, echo=FALSE}
+
+#
+# this file was originally named "redo_real_world_data_2020-05-07.Rmd"
+#
+
     pdf_document:
         toc: true
         toc_depth: 2
@@ -31,11 +38,11 @@ output:
       highlight: tango
 ```
 
-```{r echo=FALSE}
+```{r}
 knitr::opts_chunk$set(tidy = FALSE, warning = FALSE, message = FALSE, max.print = 5)
 ```
 
-```{r echo=FALSE}
+```{r}
 # load libraries
 library(tidyverse)
 library(wesanderson)
@@ -342,7 +349,7 @@ master_gg_plot + gg_plot
 
 ```
 
-## write a goddam function to split out the data for matrix cells
+## write a function to split out the data for matrix cells
 
 
 
@@ -1188,7 +1195,7 @@ ggplot(all_ncbi16_confusion_matrix %>% filter(measure=="accuracy" | measure=="pr
   labs(title="summary metrics for ncbi", x="Database in classification scheme", y="")
 ```
 
-### stupid greengenes
+### greengenes compensation
 
 have to adjust the function to accomodate the way greengenes writes its taxons
 
