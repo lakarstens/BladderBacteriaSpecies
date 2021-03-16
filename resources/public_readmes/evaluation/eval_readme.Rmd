@@ -18,6 +18,7 @@ output:
       code_folding: hide
 
 ---
+
 ```{r, eval=FALSE, echo=FALSE}
 output: 
   pdf_document:
@@ -54,6 +55,8 @@ library(tidyverse)
 
 This part of the project relied more on how terms are defined, as opposed to the straightforward amount of number-crunching that occured upstream. The section on Record Linkage is included here because "confusion matrix" is a well deserved title, and it helps to have explanations with lots of pictures.
 
+All evaluations and effects of confidence scores were processed by the function `f1_records()` in the `central_evaluation.R` script.
+
 # evaluating computational results
 
 The computational identification results are held in a CSV file that contains the sequence ID, the species of the extracted amplicon (the query record), the species name (the database record) assigned by BLCA or Naive Bayes, the confidence score, and if the names of the query and database records are a match. A "match" is designated by a 1, "non-match" is designated by a 0. Some examples are listed in the table below.
@@ -87,15 +90,20 @@ How can you tell when the classification algorithm has missed a true match? By m
 
 # evaluating the validation results
 
-As described in their paper, Thomas-White et al obtained urine samples from 77 female subjects with and without symptoms of overactive bladder. Each urine sample was cultured by expanded quantitative urine culture (EQUC), the successfully cultured bacteria isolated, and whole genome sequencing performed on the isolates. The list of bacteria species found in each sample was obtained from the supplementary information of White et al 2018.
+As described in their paper, Thomas-White et al obtained urine samples from 77 female subjects with and without symptoms of overactive bladder[^1]. Each urine sample was cultured by expanded quantitative urine culture (EQUC), the successfully cultured bacteria isolated, and whole genome sequencing performed on the isolates. The list of bacteria species found in each sample was obtained from the supplementary information.
 
-Targeted amplicon sequences of a set of those urine samples, using the V4 region of the 16S rRNA gene sequence, was generously provided by Alan Wolfe. The raw sequence reads were processed with DADA2 (v. 1.14.1) to generate amplicon sequence variants (ASVs). 
+Targeted amplicon sequences of a set of those urine samples, using the V4 region of the 16S rRNA gene sequence, was generously provided by Alan Wolfe. The raw sequence reads were processed with DADA2 (v. 1.14.1)[^2] to generate amplicon sequence variants (ASVs). 
 
 The whole genome sequencing was considered more accurate, and those results were used as the "actual" bacterial identity. They're the columns in the confusion matrix. The V4 sequencing was used as the identifier for the six classification schemes we used to validate our findings. These would be the rows of the confusion matrix. The remaining components of these classification schemes were the NCBI 16S, Silva, and Greengenes databases, and the Naive Bayes and BLCA classification algorithms.
 
+[^1]: Thomas-White K, Forster SC, Kumar N, Kuiken MV, Putonti C, Stares MD, et al. Culturing of female bladder bacteria reveals an interconnected urogenital microbiota. Nature Communications. 2018 Apr 19;9(1):1557. 
+
+[^2]: Callahan BJ, McMurdie PJ, Rosen MJ, Han AW, Johnson AJA, Holmes SP. DADA2: High-resolution sample inference from Illumina amplicon data. Nature Methods. 2016 Jul;13(7):581–3. 
+
+
 ## confusion matrix definitions
 
-The whole genome sequencing (WGS) results were taken as the basic truth of which bacteria are present in each urine sample. The computational results were compared to the WGS results, and used to designate how well a given classification scheme could be expected to perform. Some classification schemes would identify all the species identified through WGS, and some would identify very few. 
+The whole genome sequencing (WGS) results were considered which bacteria are present in each urine sample. The computational results were compared to the WGS results, and used to designate how well a given classification scheme could be expected to perform. Some classification schemes would identify all the species identified through WGS, and some would identify very few. 
 
 The V4 sequencing results were compared to the computational results to validate those expectations. Some of the classification schemes using the V4 identifier were able to identify as many species as the computational results, and some did not. These comparisons led to the following definitions on how to fill out the confusion matrix.
 
@@ -109,7 +117,7 @@ The V4 sequencing results were compared to the computational results to validate
 
 ## reformatting results
 
-We bundled the identification results, the sample names of the V4 sequencing, and the ASVs into a Phyloseq object. Because all the classification schemes used the same identifier, we ended up with six Phyloseq objects for each combination of classification algorithm and database.
+We bundled the identification results, the sample names of the V4 sequencing, and the ASVs into a Phyloseq object[^3]. Because all the classification schemes used the same identifier, we ended up with six Phyloseq objects for each combination of classification algorithm and database.
 
 ```
 Formal class 'phyloseq' [package "phyloseq"] with 5 slots
@@ -123,9 +131,12 @@ Formal class 'sample_data' [package "phyloseq"] with 4 slots
 
 The `otu_table` slot holds the ASVs from the DADA2 processing. The `tax_table` slot are the results from BLCA or Naive Bayes. And lastly, the `sam_data` holds the names of the urine samples collected.
 
+[^3]: McMurdie PJ, Holmes S. phyloseq: An R Package for Reproducible Interactive Analysis and Graphics of Microbiome Census Data. PLOS ONE. 2013 Apr 22;8(4):e61217. 
+
+
 ## merging results
 
-The graphs in the manuscript were generated by merging the classification schemes into a dataframe that represented BLCA or Naive Bayes. The merging was done by first converting the results into a matrix, and then performing some linear algebra (addition). 
+The graphs and calculations for precision, recall, and accuracy, were generated by merging the classification schemes into a dataframe that contained all results from either BLCA or Naive Bayes. The merging was done by first converting the results into a matrix, and then performing some linear algebra (addition). 
 
 So, for example, suppose there are two sets of results. Each set represents a comparison between the actual and predicted identifications. 
 
@@ -140,7 +151,7 @@ data_set_a <- matrix(data=c(0,1,1,1,0,0), nrow=3, ncol=2)
 data_set_b <- matrix(data=c(2,2,0,2,0,2), nrow=3, ncol=2)
 ```
 
-These comparisons are basicly a match/non-match outcome and can be represented by 1 or 0. 
+These comparisons are basically a match/non-match outcome and can be represented by 1 or 0. 
 
 
 ```{r}
@@ -159,7 +170,7 @@ When those results are overlaid on each other and added, you get a range of valu
 data_set_a + data_set_b
 ```
 
-This is how the validation results were evaluated and graphed. 0 would indicate that a species is absent in the sample. 1 would indicate that WGS identified that species in the sample and 2 would indicate that V4 seqeuncing identified the species in that sample. 3 would indicate that both methods identified the species in that sample.
+The validation results were evaluated and graphed in this manner. 0 would indicate that a species is absent in the sample. 1 would indicate that WGS identified that species in the sample and 2 would indicate that V4 seqeuncing identified the species in that sample. 3 would indicate that both methods identified the species in that sample.
 
 The graph below is a summary of how the comparison between the V4 sequencing and computational results assigns the identifications to what cell of the confusion matrix. The light yellow rows indicate the species correctly identified by the computational classification scheme. Blue dots represent species identified in the collected samples by WGS. Yellow dots indicate the species were identified in those samples by V4 targeted amplicon sequencing. Yellow dots in light yellow rows are true matches, when found elsewhere they are false matches. Blue dots in the light yellow rows are false non-matches, when found elsewhere they are true non-matches.
 
