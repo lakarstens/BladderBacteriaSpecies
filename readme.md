@@ -17,10 +17,16 @@ samples.
 ## File description
 
     * `evaluation/` - code for calculating the recall, precision and F-measure of the classification schemes' results
+    
     * `handle_newick/` - helper functions
+    
     * `resources/` - resource files for the repository
+    
     * `sliding_window/` - code for performing the sliding window analysis of the 16S rRNA gene sequence
+    
     * `split_to_vr/` - code for extracting simulated amplicons of the 16S rRNA gene sequence
+    
     * `taxonomy/` - code for handling the assigned taxonomy from the classification schemes
+    
     * `testing/` - python and R tests
 
