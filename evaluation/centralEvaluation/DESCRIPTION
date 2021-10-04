@@ -1,0 +1,29 @@
+Package: centralEvaluation
+Title: Evaluation of classification results
+Version: 0.0.0.9012
+Authors@R: 
+    person(given = "Carter",
+           family = "Hoffman",
+           role = c("aut", "cre"),
+           email = "carterhoffman@gmail.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: Trying to make a cleaned-up version of the central evaluation script.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Imports:
+    dplyr,
+    lubridate,
+    devtools, 
+    magrittr,
+    rlang,
+    utils,
+    testthat,
+    tidyr,
+    readr
+Suggests: 
+    rmarkdown,
+    knitr
+VignetteBuilder: knitr

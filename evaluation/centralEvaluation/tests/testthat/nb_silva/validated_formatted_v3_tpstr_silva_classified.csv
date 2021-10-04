@@ -1,0 +1,79 @@
+id,query,blca,confidence,match
+AB618790.1.1522,Actinomyces naeslundii,Actinomyces naeslundii,0.48393,1
+AB920570.1.1436,Gordonia terrae,Gordonia MCC-X,0.03257,0
+ACFH01000038.241.1767,Actinomyces urogenitalis DSM 15434,Actinomyces urogenitalis,0.63934,1
+AF003929.1.1520,Streptococcus mitis,Streptococcus G62,0.07115,0
+AF133538.1.1486,Oligella urethralis,Oligella urethralis,0.65051,1
+AFIM01000033.206.1753,Streptococcus anginosus SK52 = DSM 20563,Streptococcus JTH08,0.29623,0
+AGBA01000019.373.1883,Cutibacterium avidum ATCC 25577,Cutibacterium 25577,0.28268,0
+AGZD01000007.268077.269614,Facklamia hominis CCUG 36813,Facklamia 36813,0.95376,0
+AB004744.1.1422,Enterobacter asburiae,Klebsiella vulneris,0.01371,0
+AB008206.1.1556,Lactobacillus crispatus,Lactobacillus helveticus,0.10507,0
+AB012212.1.1517,Enterococcus faecalis,Enterococcus EnGen0327,0.04135,0
+AB680295.1.1467,Streptococcus equinus,Streptococcus lutetiensis,0.04759,0
+AB818950.1.1501,Actinomyces odontolyticus,Actinomyces odontolyticus,0.53809,1
+ACSH02000003.434.1958,Corynebacterium matruchotii ATCC 14266,Corynebacterium 14266,0.82169,0
+AF003928.1.1460,Streptococcus sanguinis,Streptococcus sanguinis,0.14413,1
+AF003933.1.1513,Streptococcus parasanguinis,Streptococcus FW213,0.10499,0
+AF322002.1.1547,Staphylococcus pettenkoferi,Staphylococcus pettenkoferi,0.1889,1
+AB007908.1.1516,Lactobacillus delbrueckii,Lactobacillus delbrueckii,0.16997,1
+AB008211.1.1540,Lactobacillus rhamnosus,Lactobacillus zeae,0.04717,0
+AB538437.1.1524,Veillonella parvula,Veillonella 6_1_27,0.20543,0
+AB006658.1.1520,Bifidobacterium breve,Bifidobacterium breve,0.22035,1
+AB008209.1.1566,Lactobacillus gasseri,Lactobacillus gasseri,0.32035,1
+AB023574.1.1501,Streptococcus agalactiae,Streptococcus BSU248,0.05317,0
+AB680901.1.1475,Globicatella sanguinis,Globicatella bacterium,0.54741,0
+AB681292.1.1476,Staphylococcus epidermidis,Staphylococcus BW01,0.0368,0
+ADMV01000001.3349.4885,Streptococcus oralis ATCC 35037,Streptococcus G62,0.07115,0
+AF003931.1.1512,Streptococcus gordonii,Streptococcus gordonii,0.09829,1
+AF243176.1.1496,Lactobacillus jensenii,Lactobacillus acidophilus,0.12746,0
+AGZE01000005.9117.10656,Facklamia ignava CCUG 37419,Facklamia 37419,0.88703,0
+AJ301681.1.1502,Morganella morganii subsp. morganii,Morganella sibonii,0.17896,0
+AJ309207.1.1475,Corynebacterium aurimucosum,Corynebacterium HMSC069E04,0.23555,0
+AM084229.1.1497,Actinomyces neuii subsp. anitratus,Actinomyces anitratus,0.45944,0
+AP008934.2304649.2306203,Staphylococcus saprophyticus subsp. saprophyticus ATCC 15305,Staphylococcus bovis,0.07986,0
+AP010889.960839.962368,Bifidobacterium longum subsp. infantis ATCC 15697 = JCM 1222 = DSM 20088,Bifidobacterium longum,0.18498,1
+ARGD01000016.303.1794,Campylobacter ureolyticus DSM 20703,Campylobacter ureolyticus,0.76271,1
+ATBY01000001.60.1575,Corynebacterium pyruviciproducens ATCC BAA-1742,Corynebacterium BAA-1742,0.55986,0
+AY677186.1.1502,Corynebacterium tuscaniense,Corynebacterium tuscaniense,0.3216,1
+AY904033.1.1437,Bacillus idriensis,Bacillus idriensis,0.06724,1
+CP001628.419927.421558,Micrococcus luteus NCTC 2665,Micrococcus indicus,0.0107,0
+CP001918.5152784.5154334,Enterobacter cloacae subsp. cloacae ATCC 13047,Salmonella Kentucky,0.00977,0
+CP002280.1382146.1383660,Rothia dentocariosa ATCC 17931,Rothia aeria,0.26005,0
+CP006032.597533.599065,Propionibacterium acnes hdn-1,Cutibacterium acnes,0.06924,0
+AJ276512.1.1499,Aerococcus sanguinicola,Aerococcus sanguinicola,0.94378,1
+AJ297722.1.1475,Kytococcus schroeteri,Kytococcus sedentarius,0.02026,0
+AJ575812.1.1555,Lactobacillus fermentum,Lactobacillus fermentum,0.15461,1
+AY188352.1.1546,Streptococcus salivarius subsp. salivarius,Streptococcus salivarius,0.13854,1
+AJ239291.1.1355,Neisseria subflava,Neisseria subflava,0.23477,1
+AJ301682.1.1503,Proteus mirabilis,Proteus mirabilis,0.0652,1
+D83373.1.1476,Staphylococcus simulans,Staphylococcus simulans,0.63881,1
+EU014689.1.1541,Escherichia coli,Escherichia-Shigella 99.1781,0.01586,0
+FR726160.1.1591,Moraxella osloensis,Enhydrobacter vulgaris,0.25417,0
+HE978271.1.1527,Pseudomonas aeruginosa,Pseudomonas otitidis,0.00892,0
+L37603.1.1470,Staphylococcus warneri,Staphylococcus warneri,0.0791,1
+M58744.1.1475,Gardnerella vaginalis ATCC 14018 = JCM 11026,Gardnerella 11026,0.61819,0
+X78720.1.1453,Actinomyces turicensis,Actinomyces ACS-279-V-Col4,0.50942,0
+X87758.1.1467,Rothia mucilaginosa,Rothia organism,0.17588,0
+Y16264.1.1471,Kocuria rhizophila,Kocuria carniphila,0.01336,0
+AJ428402.1.1510,Varibaculum cambriense,Varibaculum cambriense,0.48934,1
+AM419460.1.1482,Alloscardovia omnicolens,Alloscardovia omnicolens,0.49473,1
+AY904032.1.1367,Bacillus infantis,Bacillus infantis,0.07004,1
+EU086793.1.1470,Brevibacterium ravenspurgense,Brevibacterium ravenspurgense,0.29346,1
+HE573915.1.1543,Lactobacillus johnsonii,Lactobacillus johnsonii,0.30223,1
+M77819.1.1481,Aerococcus urinae,Aerococcus urinae,0.62938,1
+X66101.1.1544,Staphylococcus hominis subsp. hominis,Staphylococcus hominis,0.03439,1
+X79224.1.1382,Trueperella bernardiae,Trueperella bernardiae,0.47963,1
+X84244.1.1476,Corynebacterium amycolatum,Corynebacterium amycolatum,0.45417,1
+X91034.1.1511,Dermabacter hominis,Dermabacter hominis,0.00703,1
+Y07841.1.1407,Anaerococcus octavius,Anaerococcus octavius,0.26783,1
+HE573916.1.1560,Lactobacillus iners,Lactobacillus amylotrophicus,0.93052,0
+HF558366.1.1514,Neisseria perflava,Neisseria perflava,0.13955,1
+S83624.1.1532,Bifidobacterium bifidum,Bifidobacterium bifidum,0.28039,1
+X76329.1.1570,Lactobacillus pontis,Lactobacillus coleohominis,0.46389,0
+Y14651.1.1383,Corynebacterium riegelii,Corynebacterium riegelii,0.61115,1
+Y17005.1.1451,Aerococcus christensenii,Aerococcus christensenii,0.87563,1
+FJ960443.1.1495,Actinotignum schaalii,Actinotignum schaalii,0.50841,1
+HF558383.1.1514,Neisseria macacae,Neisseria flava,0.19478,0
+X87276.1.1534,Klebsiella pneumoniae,Pectobacterium UGC32,0.03112,0
+X96497.1.1483,Corynebacterium coyleae,Corynebacterium coyleae,0.40513,1
